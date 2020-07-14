@@ -1,0 +1,39 @@
+#!/bin/bash
+
+# CreateSomaticPanelOfNormals for a cohort using consolidated data from
+# or gatk4_pon_genomicsdbimport step
+# Each "task" operates on one interval
+
+#PBS -P oj47
+#PBS -N cohort_pon
+#PBS -l walltime=01:00:00,ncpus=48,mem=192GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_cohort_pon/cohort_pon.o
+#PBS -e ./Logs/gatk4_cohort_pon/cohort_pon.e
+
+module load openmpi/4.0.2
+
+set -e
+
+# SCRIPT
+SCRIPT=./gatk4_cohort_pon.sh
+INPUTS=./Inputs/gatk4_cohort_pon.inputs
+
+# M = Number of tasks per node
+# NCPUs = CPUs per task
+M=8
+NCPUS=6
+
+echo "$(date) : GATK 4 CreateSomaticPanelOfNormals for a cohort  using interval databases created with GenomicsDBImport."
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / 48)) \
+	--map-by node:PE=${NCPUS} \
+	/scratch/public/nci-parallel/1.0.0/bin/nci-parallel \
+	--verbose \
+	--verbose \
+	--verbose \
+	--input-file ${PBS_JOBFS}/input-file

@@ -1,0 +1,87 @@
+#!/bin/bash
+
+# Consolidate GVCFs
+# This merges scattered VCFs across samples
+# Result is 3200 VCF GenomicsDImport "databases", 1 for each interval
+# Each one is used as input for GenotypeGVCFs
+# ~35GB mem, 30min walltime is required per task for 6 samples, 26 samples
+
+#PBS -P hm82
+#PBS -N pon_genomicsdbimport
+#PBS -l walltime=02:00:00,ncpus=48,mem=1500GB,wd
+#PBS -q hugemem
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_pon_genomicsdbimport/pon_genomicsdbimport.o
+#PBS -e ./Logs/gatk4_pon_genomicsdbimport/pon_genomicsdbimport.e
+
+module load openmpi/4.0.2
+
+set -e
+
+# SCRIPT
+SCRIPT=./gatk4_pon_genomicsdbimport.sh
+INPUTS=./Inputs/gatk4_pon_genomicsdbimport.inputs
+
+echo "$(date) : GATK 4 Consolidate VCFs across samples with GenomicsDBImport."
+
+# M = Number of tasks per node
+# NCPUs = CPUs per task
+M=48
+NCPUS=1
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / 48)) \
+	--map-by node:PE=${NCPUS} \
+	/scratch/public/nci-parallel/1.0.0/bin/nci-parallel \
+	--verbose \
+	--verbose \
+	--verbose \
+	--input-file ${PBS_JOBFS}/input-file
+
+## TEST NOTES
+## Memory tests using normal 16 CPU 64 Gb mem nodes
+# 1 CPU 2GB mem - not enough, 43/3200 sucessful
+
+# 4 CPU 16GB mem --java-options "-Xmx12g -Xms12g" - not enough, 1348/3200 successful
+# #PBS -l walltime=03:00:00,ncpus=64,mem=256GB,wd
+# Concurrent tasks=16
+
+## Memory tests using normal 16CPU 128 Gb mem nodes
+# 4 CPU 32 Gb mem (--java-options "-Xmx24g -Xms24g") - not enough, 1744/3200 successful
+# #PBS -l walltime=04:00:00,ncpus=128,mem=1024GB,wd
+# Concurrent tasks= 32
+
+# Try setting -Xmx to less, as mem usage in log file hasn't been reached
+# 4 CPU 32 Gb mem (--java-options "-Xmx16g -Xms16g") - not enough, 1705/3200 successful
+# #PBS -l walltime=02:00:00,ncpus=128,mem=1024GB,wd
+# Concurrent tasks= 32
+
+## THIS WORKS!!! YAYYYY - For Jaime's
+# Change to normalbw nodes (28CPU, 256Gb mem), as these will remain on Gadi
+## Let's try setting --tmp-dir using the best compute resources so far
+# 4 CPU 32 Gb mem (--java-options "-Xmx24g -Xms24g", --tmp-dir).  5 nodes
+# #PBS -l walltime=04:00:00,ncpus=140,mem=1280GB,wd
+# CPU = 4 will allow ~36.6Gb per task
+# Concurrent tasks= 35
+# checking total runtime memory per task in .e file shows all tasks use very close to 24Gb mem
+# walltime was 01:42:59
+
+# Benchmark hugemem nodes - MAX YOU CAN REQUEST IS 1 NODE (24 hrs)
+# 28 CPU, 1Tb memory = 28 tasks, ~35.7Gb memory per task
+# 1 CPU 32 Gb mem (--java-options "-Xmx24g -Xms24g", --tmp-dir).
+# #PBS -l walltime=06:00:00,ncpus=28,mem=1000GB,wd
+# 
+
+## POSSIBLE CAVEATS...
+# Memory may be dependant on the number of samples
+# Could do a small test - 2, 4, 6 samples
+
+# This is not enough for Vanessa's 6 sample bams, try
+# #PBS -l walltime=06:00:00,ncpus=960,mem=3840GB,wd
+# # 5 tasks per node, allows ~38.4Gb per task, (--java-options "-Xmx28g -Xms28g", --tmp-dir)
+
+
+
+

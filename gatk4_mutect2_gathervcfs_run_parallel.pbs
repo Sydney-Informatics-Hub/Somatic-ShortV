@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Merge interval unfiltered Mutect2 files into a single VCF per TN pair
+# Samples are gzipped and tabix indexed
+
+# 21 TN pairs:
+# 48CPU, 97.16GB mem, 55.68 CPUtime, 4.25min walltime, 19.92 SU
+
+#PBS -P hm82
+#PBS -N mutect2_gathervcfs
+#PBS -l walltime=00:30:00,ncpus=48,mem=192GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/public
+#PBS -o ./Logs/gatk4_mutect2_gathervcfs/gathervcfs.o
+#PBS -e ./Logs/gatk4_mutect2_gathervcfs/gathervcfs.e
+
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+
+set -e
+			
+# NCPUs = CPUs per task (ensure this is a multiple of 12, hardware configured in 2 x (2x12) fashion on normal nodes)
+# M= Number of tasks per node
+M=48
+NCPUS=1
+			
+# SCRIPT
+SCRIPT=./gatk4_mutect2_gathervcfs.sh
+INPUTS=./Inputs/gatk4_mutect2_gathervcfs.inputs
+
+echo "$(date) : GATK 4 GatherVcfs for unfiltered Mutect2 interval VCFs."
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / 48)) \
+	--map-by node:PE=${NCPUS} \
+	nci-parallel \
+	--verbose \
+	--input-file ${PBS_JOBFS}/input-file

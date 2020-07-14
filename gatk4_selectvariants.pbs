@@ -1,0 +1,31 @@
+#! /bin/bash
+
+# Create gnomAD v3 resource for CalculateContamination
+# CalculateContamination requires only common biallelic variants
+
+#PBS -P hm82
+#PBS -N selectvariants
+#PBS -l walltime=04:00:00,ncpus=48,mem=192GB,wd
+#PBS -q express
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_selectvariants/selectvariants.o
+#PBS -e ./Logs/gatk4_selectvariants/selectvariants.e
+
+logdir=./Logs/gatk4_selectvariants
+refdir=../Reference/gatk-best-practices/somatic-hg38
+gnomad=${refdir}/af-only-gnomad.hg38.vcf.gz
+gnomad_common=${refdir}/af-only-gnomad.common_biallelic.hg38.vcf.gz
+
+set -e
+
+module load gatk/4.1.2.0
+
+mkdir -p ${logdir}
+
+gatk --java-options "-Xmx192g" SelectVariants \
+	-V ${gnomad} \
+	-select-type SNP -restrict-alleles-to BIALLELIC \
+	-select "AF > 0.05" \
+	-O ${gnomad_common} \
+	--lenient

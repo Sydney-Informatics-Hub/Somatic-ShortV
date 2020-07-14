@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Gather per interval cohort PoN VCFs after 
+# Sort gathered g.vcf.gz file
+# OSCC usage (n = 26). 2 CPU, 26.77Gb mem, 00:18:12 walltime, 1.99 SUs (express)
+
+#PBS -P hm82
+#PBS -N cohort_pon_gather_sort
+#PBS -l walltime=01:00:00,ncpus=1,mem=18GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_cohort_pon_gather_sort/cohort_pon_gather_sort.o
+#PBS -e ./Logs/gatk4_cohort_pon_gather_sort/cohort_pon_gather_sort.e
+
+set -e
+
+module load gatk/4.1.2.0
+
+cohort=samples
+config=../$cohort.config
+INPUTS=./Inputs
+vcfdir=./$cohort\_cohort_PoN
+logdir=./Logs/gatk4_cohort_pon_gather_sort
+args=${INPUTS}/gatk4_cohort_pon_gather_sort.inputs
+unsorted=${vcfdir}/${cohort}.pon.g.vcf.gz
+sorted=${vcfdir}/${cohort}.sorted.pon.g.vcf.gz
+
+rm -rf ${args}
+
+for interval in $(seq -f "%04g" 0 3199);do
+	echo "-I" ${vcfdir}/${cohort}.${interval}.pon.vcf.gz >> ${args}
+done
+
+mkdir -p ${logdir}
+rm -rf ${logdir}/${cohort}.oe
+
+# Gather per interval cohort vcf.gz files into a single .g.vcf.gz file
+# Faster to gather .g.
+# Less KSU to create MD5 later
+echo "$(date) : GATK 4 GatherVcfs for CreateSomaticPanelOfNormal calls for $cohort. Gather $cohort.interval.pon.vcf.gz files into $unsorted"
+gatk GatherVcfs \
+	--arguments_file ${args} \
+	--MAX_RECORDS_IN_RAM 100000000 \
+	-O ${unsorted} >> ${logdir}/${cohort}.oe 2>&1
+
+
+# Sort g.vcf.gz file - in case GatherVcfs fails to make index file (will happen if you output gzipped file)
+# Ensures g.vcf.gz is sorted
+echo "$(date) : GATK 4 SortVcf. Soort $unsorted to $sorted"
+gatk SortVcf \
+	-I ${unsorted} \
+	-O ${sorted} >> ${logdir}/${cohort}.oe 2>&1
+
+echo $PBS_JOBID

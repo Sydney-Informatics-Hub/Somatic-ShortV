@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Run GATK4 Mutect2 with normal bams and create a panel of normals
+# 1CPU, 4Gb mem per task
+# 96CPU per sample will allow completion in ~1 hour for a 30-60X human coverage
+# ncpus=num_samples*2*48, mem=num_samples*2*192
+
+#PBS -P hm82
+#PBS -N gatk4_pon
+#PBS -l walltime=02:00:00,ncpus=3264,mem=13056GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_pon/gatk4_pon.o
+#PBS -e ./Logs/gatk4_pon/gatk4_pon.e
+
+module load openmpi/4.0.2
+
+set -e
+
+# M = Number of tasks per node
+# NCPUs = CPUs per task
+M=48
+NCPUS=1
+	
+# SCRIPT
+SCRIPT=./gatk4_pon.sh
+INPUTS=./Inputs/gatk4_pon.inputs
+
+echo "$(date): Start creating Panel of Normals. Running Mutect2 in tumour only mode for normal samples."
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+# Did not use timeout because tasks are ordered by duration. Use walltime to manage stray jobs
+# specifying --verbose twice will print out the details of tasks as they start and end
+mpirun --np $((M * PBS_NCPUS / 48)) \
+	--map-by node:PE=${NCPUS} \
+	/scratch/public/nci-parallel/1.0.0/bin/nci-parallel \
+	--verbose \
+	--input-file ${PBS_JOBFS}/input-file

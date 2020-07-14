@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# Run GATK4 LearnReadOrientationModel
+# 1 task = 1 TN pair
+# 28Gb mem per task was successful for 8/21 TN pairs 
+# Test 48Gb per task
+
+#PBS -P hm82
+#PBS -N learnreadorientation_missing
+#PBS -l walltime=24:00:00,ncpus=48,mem=1500GB,wd
+#PBS -q hugemem
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_learnreadorientationmodel/learnreadorientation_missing_3.o
+#PBS -e ./Logs/gatk4_learnreadorientationmodel/learnreadorientation_missing_3.e
+
+set -e
+
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+
+# SCRIPT
+SCRIPT=./gatk4_learnreadorientationmodel.sh
+INPUTS=./Inputs/gatk4_learnreadorientationmodel_missing.inputs
+
+# M = Number of tasks per node
+# NCPUs = CPUs per task
+M=48
+NCPUS=1
+
+echo "$(date) : GATK 4 LearnReadOrientationModel for tumour normal pairs"
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / 48)) \
+        --map-by node:PE=${NCPUS} \
+        nci-parallel \
+        --verbose \
+        --input-file ${PBS_JOBFS}/input-file
+

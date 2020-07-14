@@ -1,0 +1,35 @@
+#!/bin/bash
+
+# Run GATK Mutect2 using scatter-gather method
+
+#PBS -P hm82
+#PBS -N mutect2
+#PBS -l walltime=02:00:00,ncpus=4032,mem=16128GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -o ./Logs/gatk4_mutect2/mutect2.o
+#PBS -e ./Logs/gatk4_mutect2/mutect2.e
+
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+set -e
+
+# SCRIPT
+SCRIPT=./gatk4_mutect2.sh
+INPUTS=./Inputs/gatk4_mutect2.inputs
+
+# M = Number of tasks per node
+# NCPUs = CPUs per task
+M=48
+NCPUS=1
+
+echo "$(date) : GATK 4 Mutect 2 for tumour normal pairs"
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / 48)) \
+	--map-by node:PE=${NCPUS} \
+	nci-parallel \
+	--verbose \
+	--input-file ${PBS_JOBFS}/input-file
