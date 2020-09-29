@@ -1,11 +1,30 @@
 #! /bin/bash
 
-# Create input for first step in creating a panel of normals
-# First step is to run Mutect2 in tumour-only mode for each normal sample
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Creates input file for gatk4_pon_run_parallel.pbs
+# Usage: sh gatk4_hc_make_input.sh <cohort>
+# where <cohort> is the base name of ../<cohort>.config
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 17/08/2020
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
 if [ -z "$1" ]
 then
-	echo "Please run this script with the base name of your config file, e.g. sh gatk4_hc_make_input.sh samples_batch1"
+	echo "Please run this script with the base name of your ../<cohort>.config file, e.g. sh gatk4_pon_make_input.sh <cohort>"
 	exit
 fi
 
@@ -32,12 +51,13 @@ while read -r sampleid labid seq_center library; do
 	fi
 done < "${config}"
 
-echo "$(date): Writing inputs for gatk4_pon_run_parallel.pbs for ${#samples[@]} samples and 3200 tasks to ${inputfile}"
+echo "$(date): Writing inputs for gatk4_pon_run_parallel.pbs for ${#samples[@]} samples and 3200 tasks per sample to ${inputfile}"
+# Resource requirements:
 echo "$(date): Normal samples found include ${samples[@]}"
 
 rm -rf ${inputfile}
 
-# Write gatk4_pon_mutect2.inputs file, using nt=1 
+# Write gatk4_pon_mutect2.inputs file, using nt=1
 while IFS= read -r intfile; do
 	for sample in "${samples[@]}"; do
 		out=${outdir}/${sample}
@@ -49,5 +69,6 @@ while IFS= read -r intfile; do
 done < "${scatterlist}"
 
 num_inputs=`wc -l ${inputfile}`
-
-echo "$(date): There are ${num_inputs} tasks to run for gatk4_pon_run_parallel.pbs"
+ncpus=$(( ${#samples[@]}*48*2 ))
+mem=$(( ${#samples[@]}*192*2 ))
+echo "$(date): Recommended compute to request in gatk4_pon_run_parallel.pbs: walltime=02:00:00,ncpus=${ncpus},mem=${mem}GB,wd"
