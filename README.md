@@ -42,9 +42,15 @@ The following will perform somatic short variant calling for all samples present
 * `sh gatk4_pon_make_input.sh <cohort>`
 * `qsub gatk4_pon_run_parallel.pbs` after adjusting <project> and compute resource requests to suit your cohort. 
   
-2. Check log files in step 1 for errors, collect duration per task and archive log files if the job was successful:
+2. Check Checks all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (gatk_pon_missing.inputs). If all checks pass, the script prints task duration and memory per interval, then archives log files.
 
-* `nohup sh gatk4_pon_check_sample_parallel.sh samples 2> /dev/null &`
+* `nohup sh gatk4_pon_check_sample_parallel.sh <cohort> 2> /dev/null &`
+
+If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missing.inputs`, re-run failed tasks by:
+
+* `qsub gatk4_pon_run_parallel.pbs` after adjusting <project> and compute resource requests (usually one node normal node is sufficient).
+
+3. 
 
 # References
 
