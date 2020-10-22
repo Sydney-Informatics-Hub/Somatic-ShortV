@@ -16,6 +16,7 @@
 #PBS -e ./Logs/gatk4_pon_genomicsdbimport/pon_genomicsdbimport.e
 
 module load openmpi/4.0.2
+module load nci-parallel/1.0.0
 
 set -e
 
@@ -25,20 +26,26 @@ INPUTS=./Inputs/gatk4_pon_genomicsdbimport.inputs
 
 echo "$(date) : GATK 4 Consolidate VCFs across samples with GenomicsDBImport."
 
-# M = Number of tasks per node
-# NCPUs = CPUs per task
-M=48
-NCPUS=1
+NCPUS=1 # CPUs per task
+
+
+#########################################################
+# Do not edit below this line
+#########################################################
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+
+M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
 mpirun --np $((M * PBS_NCPUS / CPN)) \
-	--map-by node:PE=${NCPUS} \
-	/scratch/public/nci-parallel/1.0.0/bin/nci-parallel \
-	--verbose \
-	--verbose \
-	--verbose \
-	--input-file ${PBS_JOBFS}/input-file
+        --map-by node:PE=${NCPUS} \
+        nci-parallel \
+        --verbose \
+        --input-file ${PBS_JOBFS}/input-file
+
+
 
 ## TEST NOTES
 ## Memory tests using normal 16 CPU 64 Gb mem nodes

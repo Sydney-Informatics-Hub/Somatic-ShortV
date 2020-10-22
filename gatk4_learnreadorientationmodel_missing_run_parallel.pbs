@@ -23,12 +23,19 @@ module load nci-parallel/1.0.0
 SCRIPT=./gatk4_learnreadorientationmodel.sh
 INPUTS=./Inputs/gatk4_learnreadorientationmodel_missing.inputs
 
-# M = Number of tasks per node
-# NCPUs = CPUs per task
-M=48
-NCPUS=1
+
+NCPUS=1 # CPUs per task
 
 echo "$(date) : GATK 4 LearnReadOrientationModel for tumour normal pairs"
+
+
+#########################################################
+# Do not edit below this line
+#########################################################
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+
+M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
@@ -37,4 +44,3 @@ mpirun --np $((M * PBS_NCPUS / CPN)) \
         nci-parallel \
         --verbose \
         --input-file ${PBS_JOBFS}/input-file
-

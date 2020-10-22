@@ -39,24 +39,24 @@
 #PBS -o ./Logs/gatk4_pon.o
 #PBS -e ./Logs/gatk4_pon.e
 
-#########################################################
-# Do not edit below this line (unless running on a node that
-# does not have 48 CPU, in which case edit the value of 'CPN'
-#########################################################
-
 module load openmpi/4.0.2
 module load nci-parallel/1.0.0
 
 set -e
 
-# NCPUs = CPUs per task
-NCPUS=1
-CPN=48 #CPUs per node
-M=$(( CPN / NCPUS )) #tasks per node
+NCPUS=1 # CPUs per task
 
-# SCRIPT
 SCRIPT=./gatk4_pon.sh
 INPUTS=./Inputs/gatk4_pon.inputs
+
+
+#########################################################
+# Do not edit below this line
+#########################################################
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+
+M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 

@@ -20,10 +20,8 @@ module load nci-parallel/1.0.0
 
 set -e
 			
-# NCPUs = CPUs per task (ensure this is a multiple of 12, hardware configured in 2 x (2x12) fashion on normal nodes)
-# M= Number of tasks per node
-M=48
-NCPUS=1
+
+NCPUS=1 # CPUs per task
 			
 # SCRIPT
 SCRIPT=./gatk4_mutect2_gathervcfs.sh
@@ -31,10 +29,18 @@ INPUTS=./Inputs/gatk4_mutect2_gathervcfs.inputs
 
 echo "$(date) : GATK 4 GatherVcfs for unfiltered Mutect2 interval VCFs."
 
+#########################################################
+# Do not edit below this line
+#########################################################
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+
+M=$(( CPN / NCPUS )) #tasks per node
+
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
 mpirun --np $((M * PBS_NCPUS / CPN)) \
-	--map-by node:PE=${NCPUS} \
-	nci-parallel \
-	--verbose \
-	--input-file ${PBS_JOBFS}/input-file
+        --map-by node:PE=${NCPUS} \
+        nci-parallel \
+        --verbose \
+        --input-file ${PBS_JOBFS}/input-file
