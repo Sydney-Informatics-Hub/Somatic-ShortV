@@ -35,7 +35,7 @@ echo "$(date): GATK4 GatherVcfs."
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
-mpirun --np $((M * PBS_NCPUS / 48)) \
+mpirun --np $((M * PBS_NCPUS / CPN)) \
 	--map-by node:PE=${NCPUS} \
 	/scratch/public/nci-parallel/1.0.0/bin/nci-parallel \
 	--verbose \

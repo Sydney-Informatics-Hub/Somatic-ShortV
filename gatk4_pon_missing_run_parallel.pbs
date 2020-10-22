@@ -3,29 +3,41 @@
 # Run GATK4 Mutect2 with normal bams and create a panel of normals
 # Creates 3,200 vcf intervals for each sample
 
-#PBS -P mo73
+#PBS -P <project>
 #PBS -N gatk4_pon_missing
 #PBS -l walltime=00:40:00,ncpus=48,mem=192GB,wd
 #PBS -q express
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -l storage=scratch/<project>
 #PBS -o ./Logs/gatk4_pon/gatk4_pon_missing.o
 #PBS -e ./Logs/gatk4_pon/gatk4_pon_missing.e
 
 module load openmpi/4.0.2
+module load nci-parallel/1.0.0
 
 set -e
 
-# M = Number of tasks per node
-# NCPUs = CPUs per task
-M=48
-NCPUS=1
 	
-# SCRIPT
 SCRIPT=./gatk4_pon.sh
 INPUTS=./Inputs/gatk4_pon_missing.inputs
 
+NCPUS=1 # CPU per parallel task
+
+
 echo "$(date): Creating panel of normals with gatk4 Mutect2."
 
+
+#########################################################
+# Do not edit below this line 
+#########################################################
+
+CPN=48 #CPUs per node 
+M=$(( CPN / NCPUS )) #tasks per node
+
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
-mpirun --np $((M * PBS_NCPUS / 48)) --map-by socket:PE=${NCPUS} /scratch/public/nci-parallel/nci-parallel.2 --input-file ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / CPN)) \
+        --map-by node:PE=${NCPUS} \
+        nci-parallel \
+        --verbose \
+        --input-file ${PBS_JOBFS}/input-file
