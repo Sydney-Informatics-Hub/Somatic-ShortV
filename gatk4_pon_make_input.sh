@@ -24,12 +24,11 @@
 
 if [ -z "$1" ]
 then
-	echo "Please run this script with the base name of your ../<cohort>.config file, e.g. sh gatk4_pon_make_input.sh <cohort>"
+	echo "Please provide the path to your cohort.config file, e.g. sh gatk4_pon_make_input.sh ../cohort.config"
 	exit
 fi
 
-cohort=$1
-config=../$cohort.config
+config=$1
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
 scatterlist=$scatterdir/3200_ordered_exclusions.list
