@@ -1,12 +1,9 @@
-
 #! /bin/bash
 
 #########################################################
 #
 # Platform: NCI Gadi HPC
 # Description: Check gatk4_pon job, write input for failed tasks
-# Runs gatk4_pon_check_sample.sh for each sample in parallel
-# Maximum number of samples processed in parallel is 48
 # Usage: nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
@@ -38,6 +35,14 @@ then
 fi
 
 config=$1
+
+# Adjust if required
+ref=../Reference/hs38DH.fasta
+scatterdir=../Reference/ShortV_intervals
+scatterlist=$scatterdir/3200_ordered_exclusions.list
+bamdir=../Final_bams
+logdir=./Logs/gatk4_pon
+
 SCRIPT=./gatk4_pon_check_sample.sh
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_missing.inputs
@@ -48,7 +53,7 @@ rm -rf ${inputfile}
 # Only collect IDs from normal samples (labids ending in -B)
 while read -r sampleid labid seq_center library; do
         if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
-                samples+=("${cohort},${labid},${inputfile}")
+                samples+=("${config},${labid},${inputfile},${ref},${scatterdir},${scatterlist},${bamdir},${logdir}")
         fi
 done < "${config}"
 
