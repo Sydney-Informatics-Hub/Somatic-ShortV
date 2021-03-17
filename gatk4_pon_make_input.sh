@@ -7,7 +7,7 @@
 # Usage: sh gatk4_hc_make_input.sh /path/to/cohort.config
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
-# Date last modified: 17/08/2020
+# Date last modified: 18/03/2021
 #
 # If you use this script towards a publication, please acknowledge the
 # Sydney Informatics Hub (or co-authorship, where appropriate).
