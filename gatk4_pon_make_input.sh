@@ -4,8 +4,7 @@
 #
 # Platform: NCI Gadi HPC
 # Description: Creates input file for gatk4_pon_run_parallel.pbs
-# Usage: sh gatk4_hc_make_input.sh <cohort>
-# where <cohort> is the base name of ../<cohort>.config
+# Usage: sh gatk4_hc_make_input.sh /path/to/cohort.config
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 17/08/2020
