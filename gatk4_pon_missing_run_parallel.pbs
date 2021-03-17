@@ -1,38 +1,64 @@
 #!/bin/bash
 
-# Run GATK4 Mutect2 with normal bams and create a panel of normals
-# Creates 3,200 vcf intervals for each sample
+
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Runs gatk4_pon.sh in parallel, which calls variants
+# using Mutect2 in tumour only mode from normal sample BAMs with inputs
+# created by nohup sh gatk4_pon_check_sample_parallel.sh <cohort> 2> /dev/null &
+# Usage: Adjust <project> and compute resource requests following the guide
+# below, then qsub gatk4_pon_missing_run_parallel.pbs
+# Job resource requirements:
+# walltime=02:00:00 (job expected to complete in ~1 hour for 30-60X)
+# ncpus=48*2*N (N=number of samples in ../<cohort>.config)
+# mem=192*2*N GB (N=number of samples in ../<cohort>.config)
+# Per task requirements:
+# 1 task requires 1 CPU, 4GB mem
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 18/03/2021
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
 #PBS -P <project>
 #PBS -N gatk4_pon_missing
-#PBS -l walltime=00:40:00,ncpus=48,mem=192GB,wd
-#PBS -q express
+#PBS -l walltime=02:00:00,ncpus=1152,mem=4608GB,wd
+#PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/<project>
-#PBS -o ./Logs/gatk4_pon/gatk4_pon_missing.o
-#PBS -e ./Logs/gatk4_pon/gatk4_pon_missing.e
+#PBS -l storage=scratch/hm82
+#PBS -o ../Logs/gatk4_pon/gatk4_pon_missing.o
+#PBS -e ../Logs/gatk4_pon/gatk4_pon_missing.e
 
-module load openmpi/4.0.2
-module load nci-parallel/1.0.0
-
-set -e
-
-	
-SCRIPT=./gatk4_pon.sh
 INPUTS=./Inputs/gatk4_pon_missing.inputs
-
-NCPUS=1 # CPU per parallel task
-
-
-echo "$(date): Creating panel of normals with gatk4 Mutect2."
-
 
 #########################################################
 # Do not edit below this line
 #########################################################
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+module load gatk/4.1.2.0
 
+set -e
+
+# NCPUs = CPUs per task
+NCPUS=1
+
+# SCRIPT
+SCRIPT=./gatk4_pon.sh
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
 M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
