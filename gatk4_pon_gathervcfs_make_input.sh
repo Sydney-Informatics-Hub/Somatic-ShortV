@@ -1,16 +1,34 @@
 #! /bin/bash
-# Create input for: gatk4_pon_gathervcfs_run_parallel.pbs
 
-set -e
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Creates input file for gatk4_pon_gathervcfs_run_parallel.pbs
+# Usage: sh gatk4_pon_gathervcfs_make_input.sh /path/to/cohort.config
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 18/03/2021
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
 if [ -z "$1" ]
 then
-	echo "Please run this script with the base name of your config file, e.g. sh gatk4_hc_make_input.sh samples_batch1"
-	exit
+        echo "Please provide the path to your cohort.config file, e.g. sh gatk4_pon_gathervcfs_make_input.sh ../cohort.config"
+        exit
 fi
 
-cohort=$1
-config=../$cohort.config
+config=$1
+cohort=$(basename "$config" | cut -d'.' -f 1)
 vcfdir=./$cohort\_PoN
 logdir=./Logs/gatk4_pon_gathervcfs
 INPUTS=./Inputs
@@ -19,9 +37,9 @@ inputfile=${INPUTS}/gatk4_pon_gathervcfs.inputs
 # Collect sample IDs from config file
 # Only normal sample IDs are collected (labids ending in -B or -N)
 while read -r sampleid labid seq_center library; do
-	if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
-		samples+=("${labid}")
-	fi
+        if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
+                samples+=("${labid}")
+        fi
 done < "${config}"
 
 mkdir -p ${logdir}
@@ -32,19 +50,18 @@ echo "$(date): Writing arguments and input file for ${#samples[@]} samples for g
 
 # Make arguments file for each sample, then add to inputs file
 for sample in "${samples[@]}"; do
-	echo "$(date): Writing arguments for ${sample}..."
-	args=${INPUTS}/gatk4_pon_gathervcfs_${sample}\.args
-	out=${vcfdir}/${sample}/${sample}.pon.g.vcf.gz
+        echo "$(date): Writing arguments for ${sample}..."
+        args=${INPUTS}/gatk4_pon_gathervcfs_${sample}\.args
+        out=${vcfdir}/${sample}/${sample}.pon.g.vcf.gz
 
-	rm -rf ${args}
+        rm -rf ${args}
 
-	for interval in $(seq -f "%04g" 0 3199);do
-		echo "--I " ${vcfdir}/${sample}/${sample}.pon.${interval}.vcf >> ${args}
-	done
-	echo "${sample},${args},${logdir},${out}" >> ${inputfile}
+        for interval in $(seq -f "%04g" 0 3199);do
+                echo "--I " ${vcfdir}/${sample}/${sample}.pon.${interval}.vcf >> ${args}
+        done
+        echo "${sample},${args},${logdir},${out}" >> ${inputfile}
 done
 
 num_tasks=`wc -l ${inputfile}`
 
 echo "$(date): Wrote ${num_tasks} tasks in ${inputfile}"
-
