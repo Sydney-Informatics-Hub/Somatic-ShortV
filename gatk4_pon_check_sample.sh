@@ -75,4 +75,5 @@ else
         echo "$(date): Tarring ${sample} logs..."
         cd ${logs}
         tar -czf ${sample}_logs.tar.gz ${sample}
+        rm -rf ${logdir}/${sample}
 fi
