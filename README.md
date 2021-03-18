@@ -76,6 +76,7 @@ If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missin
 * `sh gatk4_pon_genomicsdbimport_make_input.sh /path/to/cohort.config`
 * Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
 * `qsub gatk4_pon_genomicsdbimport_run_parallel.pbs`
+* Run check by: `nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &`
 
 # References
 
