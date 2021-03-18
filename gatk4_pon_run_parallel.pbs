@@ -3,23 +3,29 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Description: Runs gatk4_pon.sh in parallel, which calls variants
-# using Mutect2 in tumour only mode from normal sample BAMs with inputs
-# created by gatk4_pon_make_input.sh
+# Description: Runs gatk4_pon_genomicsdbimport.sh in parallel,
+# which consolidates per sample pon VCFs per interval in preparation
+# for multi-sample calling
 # Usage: Adjust <project> and compute resource requests following the guide
-# below, then qsub gatk4_pon_run_parallel.pbs
+# below, then qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 # Job resource requirements:
-# walltime=02:00:00 (job expected to complete in ~1 hour for 30-60X)
-# ncpus=48*2*N (N=number of samples in ../<cohort>.config)
-# mem=192*2*N GB (N=number of samples in ../<cohort>.config)
+#       A general guide is 1 hugemem node per ~30 samples for 10Mb interval
 # Per task requirements:
-# 1 task requires 1 CPU, 4GB mem
+# For 10Mb human genomic interval, 34 samples:
+#       walltime=00:40:25, average 12-35GB mem, 1 CPU
+#       job is memory bound and is influenced by number of variants,
+#       cohort size, coverage (which would affect number of variants)
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
-# Date last modified: 18/03/2021
+# Date last modified: 12/03/2021
 #
 # If you use this script towards a publication, please acknowledge the
 # Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested citation:
+# Sydney Informatics Hub, Core Research Facilities, University of Sydney,
+# 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
+# https://github.com/Sydney-Informatics-Hub/Bioinformatics
 #
 # Suggested acknowledgement:
 # The authors acknowledge the scientific and technical assistance
@@ -31,15 +37,15 @@
 #########################################################
 
 #PBS -P <project>
-#PBS -N gatk4_pon
-#PBS -l walltime=02:00:00,ncpus=1152,mem=4608GB,wd
-#PBS -q normal
+#PBS -N pon_genomicsdbimport
+#PBS -l walltime=02:00:00,ncpus=48,mem=1500GB,wd
+#PBS -q hugemem
 #PBS -W umask=022
 #PBS -l storage=scratch/<project>
-#PBS -o ../Logs/gatk4_pon/gatk4_pon.o
-#PBS -e ../Logs/gatk4_pon/gatk4_pon.e
+#PBS -o ../Logs/pon_genomicsdbimport.o
+#PBS -e ../Logs/pon_genomicsdbimport.e
 
-INPUTS=./Inputs/gatk4_pon.inputs
+INPUTS=./Inputs/gatk4_pon_genomicsdbimport.inputs
 
 #########################################################
 # Do not edit below this line
@@ -55,7 +61,7 @@ set -e
 NCPUS=1
 
 # SCRIPT
-SCRIPT=./gatk4_pon.sh
+SCRIPT=./gatk4_pon_genomicsdbimport.sh
 
 if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
 M=$(( CPN / NCPUS )) #tasks per node
