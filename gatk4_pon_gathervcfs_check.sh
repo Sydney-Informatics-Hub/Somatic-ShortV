@@ -4,6 +4,7 @@
 #
 # Platform: NCI Gadi HPC
 # Description: Check log and output files from gatk4_pon_gathervcfs_run_parallel.pbs
+# Cleans up and removes interval .vcf and .vcf.idx files
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 18/03/2021
@@ -69,8 +70,8 @@ do
                 mins=$(grep "GatherVcfs done. Elapsed time" $logfile | rev | cut -d ' ' -f 2 | rev)
         fi
         printf "${sample}\t${mins}\n" >> $out
-        vcf=${outdir}/${sample}.pon.g.vcf.gz
-        idx=${outdir}/${sample}.pon.g.vcf.gz.tbi
+        vcf=${outdir}/${sample}.pon.vcf.gz
+        idx=${outdir}/${sample}.pon.vcf.gz.tbi
         if [[ -s "$vcf" && -s "$idx" ]]
         then
                 ((++i))
@@ -80,10 +81,14 @@ do
         fi
 done
 
-echo "$(date): $i samples had non-empty VCF and index files"
+echo "$(date): $i samples passed all checks"
 if [[ -s "$inputfile" ]]
 then
         echo $(date): There are $(wc -l $inputfile) tasks to re-run.
 else
-        echo $(date): GatherVCFs check complete. There are no tasks to re-run.
+        echo $(date): GatherVCFs check complete. There are no tasks to re-run. Cleaning up...
+        for sample in "${samples[@]}"
+        do
+                rm -rf ${outdir}/${sample}
+        done
 fi
