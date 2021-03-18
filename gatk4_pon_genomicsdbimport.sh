@@ -52,10 +52,6 @@ mkdir -p ${logdir}
 
 echo "$(date) : Start GATK 4 GenomicsDBImport. Reference: ${ref}; Cohort: ${cohort}; Interval: ${interval}; Sample map: ${sample_map}; Out: ${out}; Logs: ${logdir}; Threads: ${nt}" >${logdir}/${index}.oe 2>&1
 
-# Doesn't work when working in different directories...
-#mkdir -p ${out}
-#cd ${out}
-
 gatk --java-options "-Xmx64g" \
         GenomicsDBImport \
         --sample-name-map ${sample_map} \
