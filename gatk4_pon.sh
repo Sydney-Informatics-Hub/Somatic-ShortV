@@ -44,7 +44,7 @@ vcf=${out}/${sample}.pon.${index}.vcf
 
 echo "$(date): Creating panel of normals using GATK4 Mutect2. Reference: ${ref}; Sample: ${sample}; Bam: ${bam}; Interval: ${filename}; VCF: ${vcf}; Threads: ${nt}; Logs: ${logdir}" > ${logdir}/${index}.oe 2>&1 
 
-gatk --java-options "-Xmx8g -Xms8g" \
+gatk --java-options "-Xmx8g" \
 	Mutect2 \
 	-R ${ref} \
 	-I ${bam} \
