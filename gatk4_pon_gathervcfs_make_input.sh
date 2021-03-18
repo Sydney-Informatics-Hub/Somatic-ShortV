@@ -31,6 +31,10 @@ config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)
 vcfdir=./$cohort\_PoN
 logdir=./Logs/gatk4_pon_gathervcfs
+scatterdir=../Reference/ShortV_intervals
+scatterlist=$scatterdir/3200_ordered_exclusions.list
+num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
+
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_gathervcfs.inputs
 
@@ -52,16 +56,16 @@ echo "$(date): Writing arguments and input file for ${#samples[@]} samples for g
 for sample in "${samples[@]}"; do
         echo "$(date): Writing arguments for ${sample}..."
         args=${INPUTS}/gatk4_pon_gathervcfs_${sample}\.args
-        out=${vcfdir}/${sample}/${sample}.pon.g.vcf.gz
+        out=${vcfdir}/${sample}.pon.vcf.gz
 
         rm -rf ${args}
 
-        for interval in $(seq -f "%04g" 0 3199);do
+        for interval in $(seq -f "%04g" 0 $(($num_int-1)));do
                 echo "--I " ${vcfdir}/${sample}/${sample}.pon.${interval}.vcf >> ${args}
         done
         echo "${sample},${args},${logdir},${out}" >> ${inputfile}
 done
 
-num_tasks=`wc -l ${inputfile}`
+num_tasks=$(wc -l ${inputfile} | cut -d' ' -f1)
 
 echo "$(date): Wrote ${num_tasks} tasks in ${inputfile}"
