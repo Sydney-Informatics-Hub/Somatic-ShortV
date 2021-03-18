@@ -33,24 +33,49 @@ Your high level directory structure should resemble the following:
 
 `Somatic-ShortV` will be your working directory.
 
-# Running the pipeline
+# User guide
 
-The following will perform somatic short variant calling for all samples present in `../<cohort>.config`. Once you're set up (see the guide above), change into the `Somatic-ShortV` directory after cloning this repository. The scripts use relative paths and the `Somatic-ShortV` is your working directory. Adjust compute resources requested in the `.pbs` files using the guide provided in each of the parallel scripts. This will often be according to the number of samples in `../<cohort>.config`.
+The following will perform somatic short variant calling for all samples present in `/path/to/<cohort>.config`. Once you're set up (see the guide above), change into the `Somatic-ShortV` directory after cloning this repository. The scripts use relative paths and the `Somatic-ShortV` is your working directory. Adjust compute resources requested in the `.pbs` files using the guide provided in each of the parallel scripts. This will often be according to the number of samples in `/path/to/<cohort>.config`.
+
+__Adding new samples to a cohort__: Please create a config file containing the new samples only and process these from step 1. Then follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
+
+__18/03/21__ Please check Log directory paths in PBS scripts
 
 1. Start panel of normals (PoN) creation by running Mutect2 on normal samples. The scripts below run Mutect2 in tumour only mode for the normal samples. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
 
-* `sh gatk4_pon_make_input.sh <cohort>`
-* `qsub gatk4_pon_run_parallel.pbs` after adjusting <project> and compute resource requests to suit your cohort. 
+* `sh gatk4_pon_make_input.sh /path/to/cohort.config` 
+* Adjust <project> and compute resource requests to suit your cohort. 
+* `qsub gatk4_pon_run_parallel.pbs` 
   
-2. Check Checks all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (gatk_pon_missing.inputs). If all checks pass, the script prints task duration and memory per interval, then archives log files.
+2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (gatk_pon_missing.inputs). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
 
-* `nohup sh gatk4_pon_check_sample_parallel.sh <cohort> 2> /dev/null &`
+* `nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &`
 
 If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missing.inputs`, re-run failed tasks by:
 
-* `qsub gatk4_pon_run_parallel.pbs` after adjusting <project> and compute resource requests (usually one node normal node is sufficient).
+* `qsub gatk4_pon_missing_run_parallel.pbs` after adjusting <project> and compute resource requests (usually one node normal node is sufficient).
 
-3. 
+3. Gather step 1 per interval PoN VCFs into a single zipped GVCFs per sample. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `./cohort_PoN`
+
+* `sh gatk4_pon_gathervcfs_make_input.sh /path/to/config`
+* Adjust <project> and compute resource requests to suit your cohort. 
+* `qsub gatk4_pon_gathervcfs_run_parallel.pbs` 
+* __Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
+
+4. Check pon gathervcfs from step 3. Checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are present and not empty in `./cohort_PoN`. Checks for ERROR messages in log files. Cleans up by removing interval `pon.vcf` and `pon.vcf.tbi` files if all checks have passed. 
+
+* `sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config`
+  *  If there are failed samples, a missing input file will be written and you will need to follow the below two steps. 
+  * Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs`
+  * `qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs`
+
+5. Consolidate PoN into interval databases using GenomicsDBImport
+
+* [OPTIONAL]: If you have newly sequenced samples, have processed these following steps 1-4 and would like to consolidate these with previously processed samples for downstream processing, follow the step below to create a new config file (e.g. samplesSet1and2.config containing all samples contained a list of config files (e.g. samplesSet1.config and samplesSet2.config). A new directory (e.g. samplesSet1and2_PoN) will be created. Symbolic links for per sample `pon.vcf.gz` and `pon.vcf.gz.tbi` (e.g. contained in ./samplesSet1_PoN and ./samplesSet2_PoN) will be created in the new directory.
+   * `sh concat_configs /path/to/new_cohort.config /path/to/cohort1.config /path/to/cohort2.config
+* `sh gatk4_pon_genomicsdbimport_make_input.sh /path/to/cohort.config`
+* Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
+* `qsub gatk4_pon_genomicsdbimport_run_parallel.pbs`
 
 # References
 
