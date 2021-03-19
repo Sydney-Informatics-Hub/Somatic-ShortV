@@ -81,7 +81,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
       5a. Perform steps 1 - 4 for each cohort. If you have already processed data, you will only need to do this for the newly sequenced and aligned samples.
          
-      Concatenate the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config`) by:
+      Concatenate the config files of the previously sequenced samples (e.g. in `samplesSet1.config`) and newly sequenced samples (e.g. in `samplesSet2.config`) into a new config file (e.g. in `samplesSet1andSet2.config`) by:
          
          sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
                       
