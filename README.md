@@ -37,7 +37,9 @@ Your high level directory structure should resemble the following:
 
 The following will perform somatic short variant calling for all samples present in `/path/to/<cohort>.config`. Once you're set up (see the guide above), change into the `Somatic-ShortV` directory after cloning this repository. The scripts use relative paths and the `Somatic-ShortV` is your working directory. Adjust compute resources requested in the `.pbs` files using the guide provided in each of the parallel scripts. This will often be according to the number of samples in `/path/to/<cohort>.config`.
 
-__Adding new samples to a cohort__: Please create a config file containing the new samples only and process these from step 1. Then follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
+__Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
+    * Please create a config file containing the new samples only and process these from step 1. 
+    * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
 
 __18/03/21__ Please check Log directory paths in PBS scripts
 
@@ -71,9 +73,10 @@ If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missin
 
 5. Consolidate PoN into interval databases using GenomicsDBImport
 
-* [OPTIONAL]: If you have newly sequenced samples, have processed these following steps 1-4 and would like to consolidate these with previously processed samples for downstream processing, follow the step below to create a new config file (e.g. samplesSet1and2.config containing all samples contained a list of config files (e.g. samplesSet1.config and samplesSet2.config). A new directory (e.g. samplesSet1and2_PoN) will be created. Symbolic links for per sample `pon.vcf.gz` and `pon.vcf.gz.tbi` (e.g. contained in ./samplesSet1_PoN and ./samplesSet2_PoN) will be created in the new directory.
-   * `sh concat_configs /path/to/new_cohort.config /path/to/cohort1.config /path/to/cohort2.config
-* `sh gatk4_pon_genomicsdbimport_make_input.sh /path/to/cohort.config`
+* [OPTIONAL]: If you have processed samples with Somatic-ShortV (e.g. `samplesSet1.config`) and have new samples (e.g. `samplesSet2.config`) that have been processed following step 1 - 4 and would like to create a PoN using multiple cohorts, follow the additional steps below:
+    * Concatenate processed config file (`samplesSet1.config`) with config file containing the new samples (`samplesSet2.config`) to a new output file `samplesSet1andSet2.config` by: `sh concat_configs <samplesSet1and2.config> <samplesSet1.config? <samplesSet2.config>
+    * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
+    * You will then be set up to follow the next steps
 * Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
 * `qsub gatk4_pon_genomicsdbimport_run_parallel.pbs`
 * Run check by: `nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &`
