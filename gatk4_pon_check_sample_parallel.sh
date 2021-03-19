@@ -26,8 +26,6 @@
 #
 #########################################################
 
-module load openmpi/4.0.2
-
 if [ -z "$1" ]
 then
         echo "Please provide the path to your cohort.config file, e.g nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &"
