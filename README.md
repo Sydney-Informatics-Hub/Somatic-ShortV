@@ -44,7 +44,9 @@ __Adding new samples to a cohort for PoN__: If you have sequenced new samples be
 
 __18/03/21__ Please check Log directory paths in PBS scripts
 
-1. Start panel of normals (PoN) creation by running Mutect2 on normal samples. The scripts below run Mutect2 in tumour only mode for the normal samples. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
+## Create Panel of Normals
+
+1. Start panel of normals (PoN) creation by running Mutect2 on each normal sample to create `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi`. The scripts below run Mutect2 in tumour only mode for the normal samples. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
 
          sh gatk4_pon_make_input.sh /path/to/cohort.config
 
@@ -56,7 +58,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
          nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
 
-   If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
+   If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk4_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
 
          qsub gatk4_pon_missing_run_parallel.pbs
 
@@ -98,7 +100,42 @@ __18/03/21__ Please check Log directory paths in PBS scripts
          
       Check the job when it's complete by: 
       
-         nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &
+         nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
+
+6. Create PoN per genomic interval. Here, hg38 gnomAD are used as a germline resource by default (`af-only-gnomad.hg38.vcf.gz` obtained from [GATK's Google Cloud Resource Bucket](https://console.cloud.google.com/storage/browser/gatk-best-practices/somatic-hg38;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false). You may wish to change this by specifying the resource you wish to use in the `gatk4_cohort_pon_make_input.sh` file at `germline=`
+
+       sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config 
+       
+    Adjust <project> and compute resource requests in `gatk4_cohort_pon_run_parallel.pbs`, then submit your job by:
+ 
+       qsub gatk4_cohort_pon_run_parallel.pbs
+
+7. Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF by:
+
+       qsub gatk4_cohort_pon_gather_sort.pbs
+       
+## Variant calling with Mutect2
+
+Once you have completed creating your panel of normals, you may begin calling somatic variants with Mutect2 in tumour-matched normal mode. Mutect2 outputs f1r2 files used in `ReadOrientationArtefactsWorkflow` and stats files for `MergeMutectStats`, both outputs are later used in `FilterMutectCalls`. A few things to note:
+
+* Variants will be called for each unique tumour-normal pair (i.e. if you have 3 normal samples matching 1 tumour sample. 3 VCF files for each pair will be produced)
+
+8. Create inputs to run Mutect2 for tumour-normal pairs for genomic intervals in parallel by:
+
+       sh gatk4_mutect2_make_input.sh /path/to/cohort.config
+       
+   Adjust <project> and compute resource requests in `gatk4_mutect2_run_parallel.pbs`, then submit your job by:
+ 
+       qsub gatk4_mutect2_run_parallel.pbs
+
+9. Check that Mutect2 ran successfully in the previous step. This checks that the expected output files are preset (`.vcf.gz`, `.vcf.gz.tbi`, `.vcf.gz.stats`,`f1f2.interval.tar.gz` for each tumour normal pair). This also checks for the presence of SUCCESS and error messages in the log files. 
+   
+       nohup sh gatk4_mutect2_check_pair_parallel.sh samples 2> /dev/null &
+
+   If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs`), re-run the failed tasks.
+   
+
+More to come...
 
 # References
 
