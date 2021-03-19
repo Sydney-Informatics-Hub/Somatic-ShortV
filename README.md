@@ -38,6 +38,7 @@ Your high level directory structure should resemble the following:
 The following will perform somatic short variant calling for all samples present in `/path/to/<cohort>.config`. Once you're set up (see the guide above), change into the `Somatic-ShortV` directory after cloning this repository. The scripts use relative paths and the `Somatic-ShortV` is your working directory. Adjust compute resources requested in the `.pbs` files using the guide provided in each of the parallel scripts. This will often be according to the number of samples in `/path/to/<cohort>.config`.
 
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
+
     * Please create a config file containing the new samples only and process these from step 1. 
     * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
 
