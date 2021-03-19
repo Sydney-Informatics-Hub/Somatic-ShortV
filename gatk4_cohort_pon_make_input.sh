@@ -1,46 +1,60 @@
-#! /bin/bash
+#!/bin/bash
 
-# Create input file to run gatk4_cohort_pon_run_parallel.pbs
-# Operates on per interval GenomicsDBImport database files
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Creates a panel of normal for multiple samples per genomic interval
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 19/03/2021
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested citation:
+# Sydney Informatics Hub, Core Research Facilities, University of Sydney,
+# 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
+# https://github.com/Sydney-Informatics-Hub/Bioinformatics
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
-if [ -z "$1" ]
-then
-	echo "Please run this script with the base name of your config file, e.g. sh gatk4_hc_make_input.sh samples_batch1"
-	exit
-fi
+# No option to set numnber of threads
 
-cohort=$1
-config=../$cohort.config
-INPUTS=./Inputs
-inputfile=${INPUTS}/gatk4_cohort_pon.inputs
-ref=../Reference/hs38DH.fasta
-gnomad=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
-scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
-gendbdir=./$cohort\_PoN_GenomicsDBImport
-outdir=./$cohort\_cohort_PoN
-logdir=./Logs/gatk4_cohort_pon
+ref=`echo $1 | cut -d ',' -f 1`
+cohort=`echo $1 | cut -d ',' -f 2`
+gnomad=`echo $1 | cut -d ',' -f 3`
+gendbdir=`echo $1 | cut -d ',' -f 4`
+interval=`echo $1 | cut -d ',' -f 5`
+outdir=`echo $1 | cut -d ',' -f 6`
+logdir=`echo $1 | cut -d ',' -f 7`
 
-rm -rf ${inputfile}
+mkdir -p ${outdir}
 mkdir -p ${logdir}
 
-# Collect normal sample IDs from cohort.config
-while read -r sampleid labid seq_center library; do
-	if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
-		samples+=("${labid}")
-	fi
-done < "${config}"
+filename=${interval##*/}
+index=${filename%-scattered.interval_list}
 
-echo "$(date): Writing input file for gatk4_cohort_pon_run_parallel.pbs for ${#samples[@]} samples"
+out=${outdir}/${cohort}.${index}.pon.vcf.gz
+tmp=${outdir}/tmp/${index}
 
-# Write gatk4_cohort_pon.inputs file
-while IFS= read -r intfile; do
-	interval="${scatterdir}/${intfile}"
-	echo "${ref},${cohort},${gnomad},${gendbdir},${interval},${outdir},${logdir}" >> ${inputfile}
-done < "${scatterlist}"
+mkdir -p ${outdir}
+mkdir -p ${tmp}
 
-num_tasks=`wc -l ${inputfile}`
-echo "$(date): Number of tasks are ${num_tasks}"
+echo "$(date): Running CreateSomaticPanelOfNormals with gatk4. Reference: ${ref}; Resource: ${gnomad}; Interval: ${filename}; Out: ${out};  Logs: ${logdir}" > ${logdir}/${index}.oe 2>&1
 
+gatk --java-options "-Xmx28g" \
+        CreateSomaticPanelOfNormals \
+        -R ${ref} \
+        --germline-resource ${gnomad} \
+        -V gendb://${gendbdir}/${index} \
+        --tmp-dir ${tmp} \
+        -O ${out} >>${logdir}/${index}.oe 2>&1
 
-
+echo "$(date): Finished CreateSomaticPanelOfNormals, saving output to: ${out}" >> ${logdir}/${index}.oe 2>&1
