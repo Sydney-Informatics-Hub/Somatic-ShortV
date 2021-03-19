@@ -3,13 +3,8 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Description: Creates a single new_cohort.config file from multiple
-# config files for downstream processing in Somatic-ShortV pipeline.
-# Creates a single new_cohort_PoN directory with
-# sample.pon.vcf.gz and sample.pon.vcf.gz.tbi
-# files symbollically linked from their original cohort1_PoN, cohort2_PoN,
-# etc directories
-# Usage:
+# Description: Simple concatenation of config files into a new config file
+# Usage: sh concat_configs.sh <new_config.config> <cohort1.config> <cohort2.config>
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 18/03/2021
@@ -42,7 +37,14 @@ fi
 
 output=$1
 configs=("${@:2}")
-cat=$(cat ${configs[@]})
+cat=$(cat "${@:2}")
+
+if [ -f $output ]; then
+        echo $(date): The $output file exists, please choose another filename to output the new config file to.
+        exit
+fi
+
+echo $(date) Concatenting "${configs[@]}", assuming LabSampleIDs are unique. Writing to $output
 
 # Simple concatenate configs, contains all headers if present
 echo "$cat" > $output
@@ -55,23 +57,4 @@ echo $(date): Writing new config to $output, including samples in "${configs[@]}
 
 echo "$header" > $output
 echo "$config_noheader" >> $output
-
-# Create a single directory containing PoN sample VCFs
-concat_cohort=$(basename $output | cut -d'.' -f 1)
-mkdir -p ./${concat_cohort}_PoN
-
-for config in "${configs[@]}"; do
-        cohort=$(basename ${config} | cut -d'.' -f 1)
-        if [ -d "./${cohort}_PoN" ]; then
-                if [ -z "$(ls -A ./${cohort}_PoN)" ]; then
-                        echo $(date): ./${cohort}_PoN is empty and will be excluded in ./${concat_cohort}_PoN
-                        echo $(date): If you are running gatk4_pon_genomicsdbimport step please make sure you run upsteam steps for ./${cohort}_PoN
-                else
-                        echo $(date): Creating symbolic links for files in ./${cohort}_PoN to ./${concat_cohort}_PoN
-                        `ln -s ./${cohort}_PoN/* ./${concat_cohort}_PoN/.`
-
-                fi
-        else
-                echo $(date): ./${cohort}_PoN does not exist and will be excluded in ./${concat_cohort}_PoN
-        fi
-done
+sed -i '/^$/d' $output
