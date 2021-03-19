@@ -73,7 +73,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
          sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
          
-  If there are failed samples, a missing input file will be written and you will need to follow the next step. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
+    If there are failed samples, a missing input file will be written and you will need to follow the next step. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
    
          qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 
@@ -84,9 +84,8 @@ __18/03/21__ Please check Log directory paths in PBS scripts
             * Concatenating the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config) by:
          
             sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
-            
-            
-            * Create a new PoN directory for `samplesSet1andSet2.config` by:
+                      
+   * Create a new PoN directory for `samplesSet1andSet2.config` by:
 
             sh setup_pon_from_concat_config.sh samplesSet1andSet2.config
             
