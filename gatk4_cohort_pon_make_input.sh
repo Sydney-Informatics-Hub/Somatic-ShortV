@@ -38,7 +38,7 @@ cohort=$(basename $config | cut -d'.' -f 1)
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_cohort_pon.inputs
 ref=../Reference/hs38DH.fasta
-gnomad=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
+germline=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
 scatterdir=../Reference/ShortV_intervals
 scatterlist=$scatterdir/3200_ordered_exclusions.list
 gendbdir=./$cohort\_PoN_GenomicsDBImport
@@ -60,7 +60,7 @@ echo "$(date): Writing input file for gatk4_cohort_pon_run_parallel.pbs for ${#s
 # Write gatk4_cohort_pon.inputs file
 while IFS= read -r intfile; do
         interval="${scatterdir}/${intfile}"
-        echo "${ref},${cohort},${gnomad},${gendbdir},${interval},${outdir},${logdir}" >> ${inputfile}
+        echo "${ref},${cohort},${germline},${gendbdir},${interval},${outdir},${logdir}" >> ${inputfile}
 done < "${scatterlist}"
 
 num_tasks=`wc -l ${inputfile}`
