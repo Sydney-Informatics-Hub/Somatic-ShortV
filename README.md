@@ -73,7 +73,7 @@ If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missin
 
 5. Consolidate PoN into interval databases using GenomicsDBImport
 
-* [OPTIONAL]: If you have processed samples with Somatic-ShortV (e.g. `samplesSet1.config`) and have new samples (e.g. `samplesSet2.config`) that have been processed following step 1 - 4 and would like to create a PoN using multiple cohorts, follow the additional steps below:
+* [OPTIONAL]: If you have previously processed samples (e.g. `samplesSet1.config`) and have new samples (e.g. `samplesSet2.config`, common when new samples from a cohort are sequenced) that have been processed following step 1 - 4 and would like to create a PoN using both cohorts, follow the additional steps below:
     * Concatenate processed config file (`samplesSet1.config`) with config file containing the new samples (`samplesSet2.config`) to a new output file `samplesSet1andSet2.config` by: `sh concat_configs <samplesSet1and2.config> <samplesSet1.config? <samplesSet2.config>
     * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
     * You will then be set up to follow the next steps
