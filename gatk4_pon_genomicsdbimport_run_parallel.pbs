@@ -10,10 +10,15 @@
 # below, then qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 # Job resource requirements:
 # Per task requirements:
+# For 10Mb human genomic interval, 46 samples:
+#       walltime=00:57.31:25, Mem_used=321.09GB (min=3.4GB, max=26GB)
+#        E=0.85
+#       Average mem per task=5.2GB
 # For 10Mb human genomic interval, 34 samples:
-#       walltime=00:40:25, average 12-35GB mem, 1 CPU
-#       job is memory bound and is influenced by number of variants,
-#       cohort size, coverage (which would affect number of variants)
+#       walltime=00:40:25, Mem_used=425.86GB
+#       E=0.85
+# Job is memory bound and is influenced by number of variants,
+# cohort size, coverage (which would affect number of variants)
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 12/03/2021
