@@ -77,7 +77,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
    
          qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 
-5. Consolidate PoN into interval databases using GenomicsDBImport. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), follow steps 5a and 5b. Otherwise, just follow 5b. 
+5. Consolidate PoN across multiple samples into interval databases using GenomicsDBImport. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), follow steps 5a and 5b. Otherwise, just follow 5b. 
 
       5a. Perform steps 1 - 4 for each cohort. If you have already processed data, you will only need to do this for the newly sequenced and aligned samples.
          
