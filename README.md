@@ -53,18 +53,21 @@ __18/03/21__ Please check Log directory paths in PBS scripts
   
 2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (gatk_pon_missing.inputs). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
 
-* `nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &`
+         nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
 
-If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missing.inputs`, re-run failed tasks by:
+   If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missing.inputs`, re-run failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient):
 
-* `qsub gatk4_pon_missing_run_parallel.pbs` after adjusting <project> and compute resource requests (usually one node normal node is sufficient).
+         qsub gatk4_pon_missing_run_parallel.pbs
 
 3. Gather step 1 per interval PoN VCFs into a single zipped GVCFs per sample. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `./cohort_PoN`
 
-* `sh gatk4_pon_gathervcfs_make_input.sh /path/to/config`
-* Adjust <project> and compute resource requests to suit your cohort. 
-* `qsub gatk4_pon_gathervcfs_run_parallel.pbs` 
-* __Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
+         sh gatk4_pon_gathervcfs_make_input.sh /path/to/config
+         
+   Adjust <project> and compute resource requests to suit your cohort. 
+
+         qsub gatk4_pon_gathervcfs_run_parallel.pbs
+         
+   __Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
 
 4. Check pon gathervcfs from step 3. Checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are present and not empty in `./cohort_PoN`. Checks for ERROR messages in log files. Cleans up by removing interval `pon.vcf` and `pon.vcf.tbi` files if all checks have passed. 
 
