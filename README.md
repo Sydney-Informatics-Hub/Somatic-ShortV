@@ -79,10 +79,16 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
 5. Consolidate PoN into interval databases using GenomicsDBImport
 
-* __[OPTIONAL]__: If you have previously processed samples (e.g. `samplesSet1.config`) and have new samples (e.g. `samplesSet2.config`, common when new samples from a cohort are sequenced), you can create a new PoN that includes the new samples, without repeating steps 1-4 for the processed samples. For the new samples only, follow steps 1 - 4, then:
-    * Concatenate processed config file (`samplesSet1.config`) with config file containing the new samples (`samplesSet2.config`) to a new output file `samplesSet1andSet2.config` by: `sh concat_configs <samplesSet1and2.config> <samplesSet1.config? <samplesSet2.config>
-    * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
-    * You will then be set up to follow the next steps
+      * __[For adding new samples to samples previously processed]__: If you have run the Somatic-ShortV pipeline on previously sequenced samples (e.g. `samplesSet1.config`) and have recently sequenced new samples (e.g. `samplesSet2.config`), you can create a new PoN that includes the new samples, without repeating steps 1-4 for the previously sequenced samples by:
+            * Running step 1 - 4 on the newly sequenced samples
+            * Concatenating the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config) by:
+         
+            sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
+           
+            
+            * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
+            * You will then be set up to follow the next steps
+            
 * Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
 * `qsub gatk4_pon_genomicsdbimport_run_parallel.pbs`
 * Run check by: `nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &`
