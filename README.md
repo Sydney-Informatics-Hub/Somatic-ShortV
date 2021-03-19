@@ -77,23 +77,27 @@ __18/03/21__ Please check Log directory paths in PBS scripts
    
          qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 
-5. Consolidate PoN into interval databases using GenomicsDBImport
+5. Consolidate PoN into interval databases using GenomicsDBImport. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), follow steps 5a and 5b. Otherwise, just follow 5b. 
 
- __[For adding new samples to samples previously processed, follow these additional steps]__: If you have run the Somatic-ShortV pipeline on previously sequenced samples (e.g. `samplesSet1.config`) and have recently sequenced new samples (e.g. `samplesSet2.config`), you can create a new PoN that includes the new samples, without repeating steps 1-4 for the previously sequenced samples by:
- 
-   * Running step 1 - 4 on the newly sequenced samples
-   * Concatenating the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config) by:
+      5a. Perform steps 1 - 4 for each cohort. If you have already processed data, you will only need to do this for the newly sequenced and aligned samples.
+         
+      Concatenate the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config`) by:
          
          sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
                       
-   * Create a new PoN directory for `samplesSet1andSet2.config` by:
+      Create a new PoN directory for `samplesSet1andSet2.config` by:
 
          sh setup_pon_from_concat_config.sh samplesSet1andSet2.config
             
-            
-* Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
-* `qsub gatk4_pon_genomicsdbimport_run_parallel.pbs`
-* Run check by: `nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &`
+      5b. Consolidate PoN into interval databases across multiple samples by:
+      
+      Adjusting <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs`, then submit your job by:
+   
+         qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
+         
+      Check the job when it's complete by: 
+      
+         nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config &
 
 # References
 
