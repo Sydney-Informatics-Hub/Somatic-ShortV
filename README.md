@@ -39,8 +39,8 @@ The following will perform somatic short variant calling for all samples present
 
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
 
-    * Please create a config file containing the new samples only and process these from step 1. 
-    * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
+  * Please create a config file containing the new samples only and process these from step 1. 
+  * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
 
 __18/03/21__ Please check Log directory paths in PBS scripts
 
