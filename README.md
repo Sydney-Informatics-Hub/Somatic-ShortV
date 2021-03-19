@@ -55,7 +55,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
          nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
 
-   If there are tasks to re-run from step 1 (check by `wc -l Inputs/gatk_pon_missing.inputs`, re-run failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient):
+   If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
 
          qsub gatk4_pon_missing_run_parallel.pbs
 
@@ -71,10 +71,11 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
 4. Check pon gathervcfs from step 3. Checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are present and not empty in `./cohort_PoN`. Checks for ERROR messages in log files. Cleans up by removing interval `pon.vcf` and `pon.vcf.tbi` files if all checks have passed. 
 
-* `sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config`
-  *  If there are failed samples, a missing input file will be written and you will need to follow the below two steps. 
-  * Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs`
-  * `qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs`
+         sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
+         
+  If there are failed samples, a missing input file will be written and you will need to follow the next step. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
+   
+         qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 
 5. Consolidate PoN into interval databases using GenomicsDBImport
 
