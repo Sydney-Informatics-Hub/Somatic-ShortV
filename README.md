@@ -84,9 +84,8 @@ __18/03/21__ Please check Log directory paths in PBS scripts
             * Concatenating the config files of the previously sequenced samples (`samplesSet1.config`) and newly sequenced samples (`samplesSet2.config) by:
          
             sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
-           
-            
-            * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
+                  
+      * Run `setup_pon_from_concat_config.sh` to create a new PoN directory for `samplesSet1andSet2.config` and symbolically link `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files to the new `samplesSet1andSet2_PoN` directory. This assumes `samplesSet1_PoN` and `samplesSet2_PoN` exist and have `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files.
             * You will then be set up to follow the next steps
             
 * Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs
