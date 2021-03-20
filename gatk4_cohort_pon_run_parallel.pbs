@@ -33,7 +33,7 @@
 
 #PBS -P <project>
 #PBS -N cohort_pon
-#PBS -l walltime=01:00:00,ncpus=48,mem=192GB,wd
+#PBS -l walltime=02:30:00,ncpus=48,mem=192GB,wd
 #PBS -q normal
 #PBS -W umask=022
 #PBS -l storage=scratch/<project>
