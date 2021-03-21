@@ -54,9 +54,13 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
          qsub gatk4_pon_run_parallel.pbs
   
-2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (gatk_pon_missing.inputs). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
+2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (`gatk_pon_missing.inputs`). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
 
          nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
+         
+The checker script can be run on the login node and is quick. I advise using the `nohup` command to run this script so that the script runs without being killed. Things can get messy otherwise (especially if the script stops mid tar archiving)! Check `nohup.out` (appends stdout of nohup to file) to see if your job ran successfully:
+
+         cat nohup.out
 
    If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk4_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
 
@@ -101,18 +105,29 @@ __18/03/21__ Please check Log directory paths in PBS scripts
       Check the job when it's complete by: 
       
          nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
+         cat nohup.out
 
 6. Create PoN per genomic interval. Here, hg38 gnomAD are used as a germline resource by default (`af-only-gnomad.hg38.vcf.gz` obtained from [GATK's Google Cloud Resource Bucket](https://console.cloud.google.com/storage/browser/gatk-best-practices/somatic-hg38;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false). You may wish to change this by specifying the resource you wish to use in the `gatk4_cohort_pon_make_input.sh` file at `germline=`
 
-       sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config 
+       sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config
        
     Adjust <project> and compute resource requests in `gatk4_cohort_pon_run_parallel.pbs`, then submit your job by:
  
        qsub gatk4_cohort_pon_run_parallel.pbs
+       
+7. Check that each task for `gatk4_cohort_pont_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
-7. Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF by:
+       nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
+       cat nohup.out     
+
+8. Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. First __edit the cohort=__ variable in the script, save, then submit your job:
 
        qsub gatk4_cohort_pon_gather_sort.pbs
+       
+This is the last step for creating a panel of normals and you should now have the following outputs for your `samples.config` file:
+
+* `./samples_cohort_PoN/samplesSet1andSet2.sorted.pon.vcf.gz`
+* `samplesSet1andSet2.sorted.pon.vcf.gz.tbi`
        
 ## Variant calling with Mutect2
 
@@ -120,7 +135,7 @@ Once you have completed creating your panel of normals, you may begin calling so
 
 * Variants will be called for each unique tumour-normal pair (i.e. if you have 3 normal samples matching 1 tumour sample. 3 VCF files for each pair will be produced)
 
-8. Create inputs to run Mutect2 for tumour-normal pairs for genomic intervals in parallel by:
+9. Create inputs to run Mutect2 for tumour-normal pairs for genomic intervals in parallel by:
 
        sh gatk4_mutect2_make_input.sh /path/to/cohort.config
        
@@ -128,9 +143,10 @@ Once you have completed creating your panel of normals, you may begin calling so
  
        qsub gatk4_mutect2_run_parallel.pbs
 
-9. Check that Mutect2 ran successfully in the previous step. This checks that the expected output files are preset (`.vcf.gz`, `.vcf.gz.tbi`, `.vcf.gz.stats`,`f1f2.interval.tar.gz` for each tumour normal pair). This also checks for the presence of SUCCESS and error messages in the log files. 
+10. Check that Mutect2 ran successfully in the previous step. This checks that the expected output files are preset (`.vcf.gz`, `.vcf.gz.tbi`, `.vcf.gz.stats`,`f1f2.interval.tar.gz` for each tumour normal pair). This also checks for the presence of SUCCESS and error messages in the log files. 
    
-       nohup sh gatk4_mutect2_check_pair_parallel.sh samples 2> /dev/null &
+        nohup sh gatk4_mutect2_check_pair_parallel.sh samples 2> /dev/null &
+        cat nohup.out
 
    If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs`), re-run the failed tasks.
    
