@@ -49,7 +49,7 @@ mkdir -p ${tmp}
 
 echo "$(date): Running CreateSomaticPanelOfNormals with gatk4. Reference: ${ref}; Resource: ${gnomad}; Interval: ${filename}; Out: ${out};  Logs: ${logdir}" > ${logdir}/${index}.oe 2>&1
 
-gatk --java-options "-Xmx4g" \
+gatk --java-options "-Xmx8g" \
         CreateSomaticPanelOfNormals \
         -R ${ref} \
         --germline-resource ${gnomad} \
