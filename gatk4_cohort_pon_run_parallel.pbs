@@ -9,7 +9,10 @@
 # Usage: Adjust <project> and compute resource requests following the guide
 # below, then qsub gatk4_cohort_pon_run_parallel.pbs
 # Job resource requirements:
-# Per task requirements:
+# Per task requirements: 
+#       For 46 human samples ~30X:
+#       1 CPU, 2.6GB of mem was required per task
+#       0.05 - 6.36min per task (average 0.19 min)
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 12/03/2021
@@ -33,7 +36,7 @@
 
 #PBS -P <project>
 #PBS -N cohort_pon
-#PBS -l walltime=02:30:00,ncpus=48,mem=192GB,wd
+#PBS -l walltime=02:30:00,ncpus=48,mem=190GB,wd
 #PBS -q normal
 #PBS -W umask=022
 #PBS -l storage=scratch/<project>
@@ -53,7 +56,7 @@ module load nci-parallel/1.0.0
 module load gatk/4.1.2.0
 
 # NCPUs = CPUs per task
-NCPUS=6
+NCPUS=1
 
 # SCRIPT
 SCRIPT=./gatk4_cohort_pon.sh
