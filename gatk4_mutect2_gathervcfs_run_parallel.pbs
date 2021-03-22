@@ -9,6 +9,10 @@
 # Usage: Adjust <project> and compute resource requests following the guide
 # below, then qsub gatk4_pon_gathervcfs_run_parallel.pbs
 # Job resource requirements:
+#       To gather Mutect2 VCFs for 54 tumour normal pairs:
+#       48CPU, 170GB mem, 00:08:59, E=0.32, SU=14.37
+#       To gather Mutect2 VCFs for 21 tumour normal pairS:
+#       48CPU, 97.16GB mem, 55.68 CPUtime, 4.25min walltime, 19.92 SU
 # Per task requirements:
 # 1 task (1 sample) requires 1 CPU, 4-20GB mem
 # 8.15 min average to process one sample
@@ -27,9 +31,6 @@
 # with access facilitated by the University of Sydney.
 #
 #########################################################
-
-# 21 TN pairs:
-# 48CPU, 97.16GB mem, 55.68 CPUtime, 4.25min walltime, 19.92 SU
 
 #PBS -P <project>
 #PBS -N mutect2_gathervcfs
