@@ -31,16 +31,24 @@
 
 if [ -z "$1" ]
 then
-        echo "Please run this script with the base name of your config file, e.g. sh gatk4_hc_make_input.sh samples_batch1"
+        echo "Please provide the path to your cohort.config file, e.g. sh gatk4_mutect2_make_input.sh ../cohort.config"
         exit
 fi
 
+# INPUTS
 config=$1
 cohort=$(basename $config | cut -d'.' -f 1)
-config=../$cohort.config
-SCRIPT=./gatk4_mutect2_check_pair.sh
+ref=../Reference/hs38DH.fasta
+scatterdir=../Reference/ShortV_intervals
+scatterlist=$scatterdir/3200_ordered_exclusions.list
+pon=./$cohort\_cohort_PoN/$cohort.sorted.pon.vcf.gz
+germline=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
+logdir=./Logs/gatk4_mutect2
 INPUTS=./Inputs
+bamdir=../Final_bams
 inputfile=${INPUTS}/gatk4_mutect2_missing.inputs
+SCRIPT=./gatk4_mutect2_check_pair.sh
+num_intervals=$(wc -l $scatterlist | cut -d' ' -f 1)
 
 rm -rf ${inputfile}
 
@@ -60,13 +68,19 @@ for nmid in "${samples[@]}"; do
         if (( ${#patient_samples[@]} == 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 tmid=`printf '%s\n' ${patient_samples[@]} | grep -vP 'N.?$|B.?$'`
-                inputs+=("${cohort},${tmid},${nmid}")
+                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
+                tmp+=("$tmpfile")
+                outdir=./Interval_VCFs/${tmid}_${nmid}
+                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
         elif (( ${#patient_samples[@]} > 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 for sample in "${patient_samples[@]}"; do
                         if ! [[ ${sample} =~ -N.?$ || ${sample} =~ -B.?$ ]]; then
                                 tmid=${sample}
-                                inputs+=("${cohort},${tmid},${nmid}")
+                                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
+                                tmp+=("$tmpfile")
+                                outdir=./Interval_VCFs/${tmid}_${nmid}
+                                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
                         fi
                 done
         fi
@@ -75,6 +89,16 @@ done
 echo "$(date): Checking .vcf.gz, .vcf.gz.tbi, vcf.gz.stats, f1r2 files for ${#inputs[@]} tumour normal pairs"
 
 echo "${inputs[@]}" | xargs --max-args 1 --max-procs 48 ${SCRIPT}
+
+paste -d'\n' "${tmp[@]}" > ${inputfile}
+
+echo "$(date): Removing temporary files..."
+
+for tmp in "${tmp[@]}"; do
+        rm -rf ${tmp}
+done
+
+echo "$(date): Done!"
 
 if [[ -s ${inputfile} ]]; then
         num_inputs=`wc -l ${inputfile}`
