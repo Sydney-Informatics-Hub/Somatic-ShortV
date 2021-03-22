@@ -127,7 +127,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 This is the last step for creating a panel of normals and you should now have the following outputs for your `samples.config` file:
 
 * `./samples_cohort_PoN/samplesSet1andSet2.sorted.pon.vcf.gz`
-* `samplesSet1andSet2.sorted.pon.vcf.gz.tbi`
+* `./samples_cohort_PoN/samplesSet1andSet2.sorted.pon.vcf.gz.tbi`
        
 ## Variant calling with Mutect2
 
@@ -145,11 +145,16 @@ Once you have completed creating your panel of normals, you may begin calling so
 
 10. Check that Mutect2 ran successfully in the previous step. This checks that the expected output files are preset (`.vcf.gz`, `.vcf.gz.tbi`, `.vcf.gz.stats`,`f1f2.interval.tar.gz` for each tumour normal pair). This also checks for the presence of SUCCESS and error messages in the log files. 
    
-        nohup sh gatk4_mutect2_check_pair_parallel.sh samples 2> /dev/null &
+        nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null &
         cat nohup.out
 
-   If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs`), re-run the failed tasks.
+   If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs` or `cat nohup.out`), re-run the failed tasks. 
    
+   Adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
+ 
+      qsub gatk4_mutect2_missing_run_parallel.pbs
+   
+
 
 More to come...
 
