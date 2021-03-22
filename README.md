@@ -148,13 +148,19 @@ Once you have completed creating your panel of normals, you may begin calling so
         nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null &
         cat nohup.out
 
-   If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs` or `cat nohup.out`), re-run the failed tasks. 
+     If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs` or `cat nohup.out`), re-run the failed tasks. 
    
-   Adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
+     Adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
  
-      qsub gatk4_mutect2_missing_run_parallel.pbs
-   
+        qsub gatk4_mutect2_missing_run_parallel.pbs
 
+11. Gather the unfiltered Mutect2 interval VCFs per tumour normal pair. Create inputs by:
+
+        sh gatk4_mutect2_gathervcfs_make_input.sh /path/to/cohort.config
+
+     Adjust <project> and compute resource requests in `gatk4_mutect2_gathervcfs_run_parallel.pbs`, then submit your job by:
+ 
+        qsub gatk4_mutect2_gathervcfs_run_parallel.pbs
 
 More to come...
 
