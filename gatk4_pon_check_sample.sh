@@ -71,9 +71,9 @@ if [[ ${i}>0 ]]; then
         echo "$(date): ${sample} has $i failed tasks. Wrote $i tasks to ${inputfile}"
 else
         echo "$(date): ${sample} has $i failed tasks. Printing task duration and memory usage..."
-        perl ${PERL_SCRIPT} ${logs}/${sample} > ${logdir}/${sample}/${sample}_task_duration_mem.txt
+        perl ${PERL_SCRIPT} ${logdir}/${sample} > ${logdir}/${sample}/${sample}_task_duration_mem.txt
         echo "$(date): Tarring ${sample} logs..."
-        cd ${logs}
+        cd ${logdir}
         tar -czf ${sample}_logs.tar.gz ${sample}
         rm -rf ${logdir}/${sample}
 fi
