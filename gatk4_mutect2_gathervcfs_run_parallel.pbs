@@ -37,8 +37,8 @@
 #PBS -q normal
 #PBS -W umask=022
 #PBS -l storage=scratch/<project>
-#PBS -o ../Logs/mutect2_gathervcfs_samplesSet1andSet2.o
-#PBS -e ../Logs/mutect2_gathervcfs_samplesSet1andSet2.e
+#PBS -o ../Logs/mutect2_gathervcfs.o
+#PBS -e ../Logs/mutect2_gathervcfss.e
 
 set -e
 
