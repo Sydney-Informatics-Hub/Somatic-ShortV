@@ -7,6 +7,7 @@
 # Runs gatk4_mutect2_check_pair.sh for each tumour-normal pair in parallel
 # Maximum number of samples processed in parallel is 48
 # Usage: nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null &
+# Check nohup.out file. Failed tasks will be written to ./Inputs/gatk4_mutect2_missing.inputs 
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 18/03/2021
@@ -71,7 +72,7 @@ for nmid in "${samples[@]}"; do
                 tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
                 tmp+=("$tmpfile")
                 outdir=./Interval_VCFs/${tmid}_${nmid}
-                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
+                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir},${logdir}")
         elif (( ${#patient_samples[@]} > 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 for sample in "${patient_samples[@]}"; do
@@ -80,27 +81,22 @@ for nmid in "${samples[@]}"; do
                                 tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
                                 tmp+=("$tmpfile")
                                 outdir=./Interval_VCFs/${tmid}_${nmid}
-                                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
+                                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir},${logdir}")
                         fi
                 done
         fi
 done
 
-echo "$(date): Checking .vcf.gz, .vcf.gz.tbi, vcf.gz.stats, f1r2 files for ${#inputs[@]} tumour normal pairs"
+echo "$(date): Checking .vcf.gz, .vcf.gz.tbi, .vcf.gz.stats, f1r2 files for ${#inputs[@]} tumour normal pairs"
 
 echo "${inputs[@]}" | xargs --max-args 1 --max-procs 48 ${SCRIPT}
 
-paste -d'\n' "${tmp[@]}" > ${inputfile}
-
-echo "$(date): Removing temporary files..."
-
-for tmp in "${tmp[@]}"; do
-        rm -rf ${tmp}
-done
-
-echo "$(date): Done!"
-
 if [[ -s ${inputfile} ]]; then
+        paste -d'\n' "${tmp[@]}" > ${inputfile}
+        echo "$(date): Removing temporary files..."
+        for tmp in "${tmp[@]}"; do
+                rm -rf ${tmp}
+        done
         num_inputs=`wc -l ${inputfile}`
         echo "$(date): There are ${num_inputs} tasks to run for gatk4_mutect2_missing_run_parallel.pbs"
 else
