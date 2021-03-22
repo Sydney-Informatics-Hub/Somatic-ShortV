@@ -30,12 +30,12 @@
 
 #PBS -P <project>
 #PBS -N pon_gathervcfs
-#PBS -l walltime=01:00:00,ncpus=48,mem=192GB,wd
+#PBS -l walltime=01:00:00,ncpus=48,mem=190GB,wd
 #PBS -q normal
 #PBS -W umask=022
 #PBS -l storage=scratch/<project>
-#PBS -o ../Logs/gatk4_pon_gathervcfs/pon_gathervcfs.o
-#PBS -e ../Logs/gatk4_pon_gathervcfs/pon_gathervcfs.e
+#PBS -o ../Logs/pon_gathervcfs.o
+#PBS -e ../Logs/pon_gathervcfs.e
 
 set -e
 
