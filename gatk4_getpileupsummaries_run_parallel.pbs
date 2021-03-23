@@ -1,38 +1,67 @@
 #!/bin/bash
 
-# Run GATK4 GetPileupSummaries
-# 1 task = 1 bam
-# 28Gb mem per task, ~ 25min walltime
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Runs gatk4_getpileupsummaries.sh in parallel,
+# which runs GetPileUpSummaries for a BAM file at
+# loci contained in common biallelic variant resource
+# Pileups are used in CalculateContamination
+# Usage: Adjust <project> and compute resource requests following the guide
+# below, then qsub gatk4_getpileupsummaries_run_parallel.pbs
+# Job resource requirements:
+# Per task requirements:
+#       1 task (BAM) requires 2CPU, ~54GB mem, ~25min walltime on hugemem
+#       2 CPU enables ~62.5GB mem available on hugemem per task
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 23/03/2021
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested citation:
+# Sydney Informatics Hub, Core Research Facilities, University of Sydney,
+# 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
+# https://github.com/Sydney-Informatics-Hub/Bioinformatics
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
-#PBS -P hm82
+#PBS -P <project>
 #PBS -N getpileupsummaries
 #PBS -l walltime=05:00:00,ncpus=48,mem=1500GB,wd
 #PBS -q hugemem
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
-#PBS -o ./Logs/gatk4_getpileupsummaries/getpileupsummaries.o
-#PBS -e ./Logs/gatk4_getpileupsummaries/getpileupsummaries.e
+#PBS -l storage=scratch/<project>
+#PBS -o ../Logs/getpileupsummaries.o
+#PBS -e ../Logs/getpileupsummaries.e
 
 set -e
 
-module load openmpi/4.0.2
-module load nci-parallel/1.0.0
-
-# SCRIPT
-SCRIPT=./gatk4_getpileupsummaries.sh
 INPUTS=./Inputs/gatk4_getpileupsummaries.inputs
-
-
-NCPUS=2 # CPUs per task
-
-echo "$(date): GATK 4 GetPileupSummaries for tumour normal pairs"
 
 #########################################################
 # Do not edit below this line
 #########################################################
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+module load gatk/4.1.2.0
 
+# NCPUs = CPUs per task
+NCPUS=2
+
+# SCRIPT
+SCRIPT=./gatk4_getpileupsummaries.sh
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
 M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
@@ -42,4 +71,3 @@ mpirun --np $((M * PBS_NCPUS / CPN)) \
         nci-parallel \
         --verbose \
         --input-file ${PBS_JOBFS}/input-file
-
