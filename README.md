@@ -15,8 +15,8 @@ Upon completion of [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fast
 1. Change to the working directory where your final bams were created.
 * ensure you have a `<cohort>.config` file, that is a tab-delimited file including `#SampleID	LabSampleID	SeqCentre	Library(default=1)` (the same config or a subset of samples from the config used in [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) is perfect). Sample GVCFs and multi-sample VCFs will be created for samples included in <cohort>.config. Sample ID's must end in -B or -N (this is to denote that they are normal, not tumour samples). 
 * ensure you have a `Final_bams` directory, containing `<labsampleid>.final.bam` and `<labsampleid>.final.bai` files. <labsampleid> should match LabSampleID column in your `<cohort>.config` file.
- * ensure you have `References` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM). This contains input data required for Germline-ShortV (ordered and pre-definted intervals, known variants for variant quality score recalibration).
-2. Clone this respository by `git clone https://github.com/Sydney-Informatics-Hub/Germline-ShortV.git`
+ * ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM). This contains input data required for Somatic-ShortV 
+2. Clone this respository by `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`
 
 Your high level directory structure should resemble the following:
 
@@ -184,14 +184,15 @@ The following jobs prepare input files for the last part of the Somatic-ShortV p
 
 After variant calling with Mutect2, `stats` files are created. When scattering Mutect2 across a list of genomic intervals, `stats` files are produced for each interval. These files contain the number of callable sites, (by default the callable depth is 10). 
 
-To gather each of the interval stats files for each tumour-normal pair, create inputs by:
+12. To gather each of the interval stats files for each tumour-normal pair, create inputs by:
 
-    sh gatk4_mergemutectstats_make_input.sh /path/to/cohort.config
+        sh gatk4_mergemutectstats_make_input.sh /path/to/cohort.config
 
-Adjust <project> and compute resource requests in `gatk4_mergemutectstats_run_parallel.pbs`, then submit your job by:
+    Adjust <project> and compute resource requests in `gatk4_mergemutectstats_run_parallel.pbs`, then submit your job by:
  
-    qsub gatk4_mergemutectstats_run_parallel.pbs
+        qsub gatk4_mergemutectstats_run_parallel.pbs
     
+
 For each tumour-normal pair in your `cohort.config` file, you will now have: 
 
 * `./Interval_VCFs/TumourID_NormalID/TumourID_NormalID.unfiltered.vcf.gz.stats`
@@ -200,18 +201,52 @@ For each tumour-normal pair in your `cohort.config` file, you will now have:
 
 This step aims to remove substitution error bias on a single strand. This applies to FFPE tumour samples and samples sequenced on Illumina Novaseq machines. It is recommended to run this, even if your samples/sequencing machines are not prone to orientation bias. 
 
-Create a job input file and arguments file for each tumour normal pair (containining f1r2 genomic interval files for the pair created from Mutect2) by:
+13. Create a job input file and arguments file for each tumour normal pair (containining f1r2 genomic interval files for the pair created from Mutect2) by:
 
-    sh  gatk4_learnreadorientationmodel_make_input /path/to/cohort.config
+        sh gatk4_learnreadorientationmodel_make_input /path/to/cohort.config
 
-Adjust <project> and compute resource requests in `gatk4_learnreadorientationmodel_run_parallel.pbs`, then submit your job by:
+    Adjust <project> and compute resource requests in `gatk4_learnreadorientationmodel_run_parallel.pbs`, then submit your job by:
+  
+        qsub gatk4_learnreadorientationmodel_run_parallel.pbs
+
+14. Check that LearnReadOrientationModel ran successfully for each tumour-normal pair. The log files are checked for `SUCCESS` and `error` messages and that the expected output file  `./Interval_VCFs/TumourID_NormalID/TumourID_NormalID_read-orientation-model.tar.gz` exists and is not empty. Create inputs by:
+
+        sh gatk4_learnreadorientationmodel_check.sh /path/to/cohort.config
+        
+       
  
-    qsub gatk4_learnreadorientationmodel_run_parallel.pbs
-
 For each tumour-normal pair in your `cohort.config` file, you will now have:
 
 * `./Interval_VCFs/TumourID_NormalID/TumourID_NormalID_read-orientation-model.tar.gz`
 
+### GetPileupSummaries & CalculateContamination
+
+With the assumption that known germline variant sites are biallelic, any site that presents multiple variant alleles is suspect.
+
+`GetPileupSummaries` uses a sample BAM file and a __germline resource containing common biallelic variants__. This tabulates pileup metrics for `CalculateContamination`, summarizing the counts of reads that support the reference, alternate and other alleles. 
+
+__Germline resources__
+
+The `../Reference` directory downloadable and described in [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) contains two germline resources that can be used for `GetPileupSummaries`:
+
+* Common biallelic variants from the ExAC dataset (containing 60,706 exomes), lifted to the hg38 reference genome in `../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`
+* Common biallelic variants from gnomAD (76,156 whole genomes) mapped to hg38 in `../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz`. This was created using the optional `SelectVariants` tool in the `gatk4_selectvariants.pbs` script. 
+
+__[Optional]__: If you would like to use your own common biallelic variant resource, you can use `gatk4_selectvariants.pbs` which takes your public resource VCF, and selects common biallelic SNP variants (by default, those with an allele frequency of > 0.05).
+
+15. Once you have selected or created your common biallelic germline resource, run `GetPileupSummaries` for all samples in your `cohort.config` file. Create inputs by:
+        
+    Checking the germline resource that you wish to use (common_biallelic variable - leave the resource you wish to use unhashed, or replace with the path to your common biallelic variant VCF). Then create inputs:
+    
+        sh gatk4_getpileupsummaries_make_input.sh /path/to/cohort.config
+   
+   Adjust <project> and compute resource requests in `gatk4_getpileupsummaries_run_parallel.pbs`, then submit your job by:
+  
+        qsub gatk4_getpileupsummaries_run_parallel.pbs     
+    
+16. Calculate contamination
+
+## FilterMutectCalls   
 
 # References
 
