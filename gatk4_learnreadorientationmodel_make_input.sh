@@ -80,7 +80,7 @@ while read -r sampleid labid seq_center library; do
                                         out=${vcfdir}/${pair}/${pair}_read-orientation-model.tar.gz
                                         rm -rf ${args}
                                         for interval in $(seq -f "%04g" 0 $((${num_int}-1)));do
-                                                echo "--I " ${vcfdir}/${pair}/${pair}.f1r2.${interval}.vcf.gz >> ${args}
+                                                echo "--I " ${vcfdir}/${pair}/${pair}.f1r2.${interval}.tar.gz >> ${args}
                                         done
                                         echo "--I " ${vcfdir}/${pair}/${pair}.f1r2.chrM.tar.gz >> ${args}
 
