@@ -162,7 +162,56 @@ Once you have completed creating your panel of normals, you may begin calling so
  
         qsub gatk4_mutect2_gathervcfs_run_parallel.pbs
 
-More to come...
+This is the last step for calling unfiltered somatic variants for tumour-normal pairs with Mutect2, using a panel of normals. For each tumour normal pair in your `samples.config` file, you will now have:
+
+* `Interval_VCFs/TumourID_NormalID.unfiltered.vcf.gz`
+* `Interval_VCFs/TumourID_NormalID.unfiltered.vcf.gz.tbi`
+
+You will also have input files for the filtering steps, including:
+
+* Per interval `.stats` files for `MergeMutectStats`
+* Per interval `f1r2` files for `LearnReadOrientationModel`
+
+## Prepare for filtering 
+
+The following jobs prepare input files for the last part of the Somatic-ShortV pipeline, `FilterMutectCalls`. There are three parts and each of these can be run concurrently:
+
+* `MergeMutectStats`
+* `LearnReadOrientationModel`
+* `GetPileupSummaries` and `CalculaterContamination`
+
+### MergeMutectStats
+
+After variant calling with Mutect2, `stats` files are created. When scattering Mutect2 across a list of genomic intervals, `stats` files are produced for each interval. These files contain the number of callable sites, (by default the callable depth is 10). 
+
+To gather each of the interval stats files for each tumour-normal pair, create inputs by:
+
+    sh gatk4_mergemutectstats_make_input.sh /path/to/cohort.config
+
+Adjust <project> and compute resource requests in `gatk4_mergemutectstats_run_parallel.pbs`, then submit your job by:
+ 
+    qsub gatk4_mergemutectstats_run_parallel.pbs
+    
+For each tumour-normal pair in your `cohort.config` file, you will now have: 
+
+* `./Interval_VCFs/TumourID_NormalID/TumourID_NormalID.unfiltered.vcf.gz.stats`
+
+### LearnReadOrientationModel
+
+This step aims to remove substitution error bias on a single strand. This applies to FFPE tumour samples and samples sequenced on Illumina Novaseq machines. It is recommended to run this, even if your samples/sequencing machines are not prone to orientation bias. 
+
+Create a job input file and arguments file for each tumour normal pair (containining f1r2 genomic interval files for the pair created from Mutect2) by:
+
+    sh  gatk4_learnreadorientationmodel_make_input /path/to/cohort.config
+
+Adjust <project> and compute resource requests in `gatk4_learnreadorientationmodel_run_parallel.pbs`, then submit your job by:
+ 
+    qsub gatk4_learnreadorientationmodel_run_parallel.pbs
+
+For each tumour-normal pair in your `cohort.config` file, you will now have:
+
+* `./Interval_VCFs/TumourID_NormalID/TumourID_NormalID_read-orientation-model.tar.gz`
+
 
 # References
 
