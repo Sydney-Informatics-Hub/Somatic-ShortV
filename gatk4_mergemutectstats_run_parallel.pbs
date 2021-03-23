@@ -10,6 +10,8 @@
 # Usage: Adjust <project> and compute resource requests following the guide
 # below, then qsub gatk4_mergemutectstats_run_parallel.pbs
 # Job resource requirements:
+#       For 56 tumour-normal pairs:
+#       CPU=48, 33GB, walltime=00:02:08, E-0.14, SU=3.41
 # Per task requirements:
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
