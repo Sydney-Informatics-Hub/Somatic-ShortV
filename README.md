@@ -232,7 +232,11 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
 * Common biallelic variants from the ExAC dataset (containing 60,706 exomes), lifted to the hg38 reference genome in `../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`
 * Common biallelic variants from gnomAD (76,156 whole genomes) mapped to hg38 in `../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz`. This was created using the optional `SelectVariants` tool in the `gatk4_selectvariants.pbs` script. 
 
-__[Optional]__: If you would like to use your own common biallelic variant resource, you can use `gatk4_selectvariants.pbs` which takes your public resource VCF, and selects common biallelic SNP variants (by default, those with an allele frequency of > 0.05).
+  __[Optional]__: If you would like to use your own common biallelic variant resource, you can use `gatk4_selectvariants.pbs` which takes your public resource VCF, and selects common biallelic SNP variants (by default, those with an allele frequency of > 0.05).
+  
+  In the `gatk4_selectvariants.pbs` script, replace `<>` with your resource for `resource=<path/to/public_dataset.vcf.gz>` and output file `resource_common=</path/to/output_public_dataset_common_biallelic.vcf.gz>`. Adjust your <project> and compute resources, then submit your job by:
+ 
+      qsub gatk4_selectvariants.pbs
 
 15. Once you have selected or created your common biallelic germline resource, run `GetPileupSummaries` for all samples in your `cohort.config` file. Create inputs by:
         
@@ -244,9 +248,31 @@ __[Optional]__: If you would like to use your own common biallelic variant resou
   
         qsub gatk4_getpileupsummaries_run_parallel.pbs     
     
-16. Calculate contamination
+16. Calculate the fraction of reads coming from cross sample contamination using `CalculateContamination` using pileups tables from `GetPileupSummaries` as inputs. The resulting contamination table is used in `FilterMutectCalls`. Create inputs by:
+
+        sh gatk4_calculatecontamination_make_input.sh /path/to/cohort.config
+        
+   
 
 ## FilterMutectCalls   
+
+You are finally ready to obtain a filtered set of somatic variants using `FilterMutectCalls`. You will need the inputs from the previous steps, including:
+
+* `TumourID_NormalID.unfiltered.vcf.gz` (from Mutect2, using PoN)
+* `TumourID_NormalID.unfiltered.vcf.gz.stats` (from Mutect2, genomic intervals gathered into a single stats file with `MergeMutectStats`)
+* `tumor_segments.table` (from GetPileupSummaries & CalculateContamination)
+* `TumorID_NormalID_contamination.table` (from GetPileupSummaries & CalculateContamination)
+* `TumourID_NormalID_read-orientation-model.tar.gz` (from Mutect2 & LearnReadOrientationModel)
+
+17. Create input files for each task (`FilterMutectCalls` for a single tumour normal pair) by:
+
+        sh gatk4_filtermutectcalls_make_input.sh /path/to/cohort.config
+
+    Adjust <project> and compute resource requests in `gatk4_filtermutectcalls_run_parallel.pbs`, then submit your job by:
+  
+        qsub gatk4_filtermutectcalls_run_parallel.pbs             
+    
+
 
 # References
 
