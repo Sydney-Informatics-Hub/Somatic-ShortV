@@ -21,6 +21,8 @@
 #
 #########################################################
 
+set -e
+ 
 if [ -z "$1" ]
 then
         echo "Please provide the path to your cohort.config file, e.g. sh gatk4_mergemutectstats_make_input.sh ../cohort.config"
