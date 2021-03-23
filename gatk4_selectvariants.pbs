@@ -5,18 +5,14 @@
 # Platform: NCI Gadi HPC
 # Description: Select common biallelic variants from a public resource
 # Common biallelic variants are used in GetPileupSummaries and CalculateContamination
-# Usage: Adjust variables refdir=, resource=,a nd resource_common=
+# Usage: Adjust variables "resource", and "resource_common"
 # The resource variable is your public variants in VCF format
 # The common biallelic variants selected from the public resource is
 # saved in the output file of the resource_common= variable
 # Adjust <project> and compute resource requests following the guide
 # below, then qsub gatk4_selectvariants.pbs
 # Job resource requirements:
-# walltime=02:00:00 (job expected to complete in ~1 hour for 30-60X)
-# ncpus=48*2*N (N=number of samples in ../<cohort>.config)
-# mem=192*2*N GB (N=number of samples in ../<cohort>.config)
 # Per task requirements:
-# 1 task requires 1 CPU, 4GB mem
 # Author: Tracy Chew
 # tracy.chew@sydney.edu.au
 # Date last modified: 18/03/2021
@@ -43,9 +39,11 @@
 #PBS -e ./Logs/selectvariants.e
 
 logdir=./Logs/gatk4_selectvariants
-refdir=../Reference/gatk-best-practices/somatic-hg38
-resource=${refdir}/af-only-gnomad.hg38.vcf.gz
-resource_common=${refdir}/af-only-gnomad.common_biallelic.hg38.vcf.gz
+
+# Please replace this path with the path to your public variant resource
+resource=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38.vcf.gz
+# Please replace this path with the output path and filename
+resource_common=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz
 
 set -e
 
