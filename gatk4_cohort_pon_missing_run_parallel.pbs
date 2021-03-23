@@ -1,38 +1,66 @@
 #!/bin/bash
 
-# CreateSomaticPanelOfNormals for a cohort using consolidated data from
-# or gatk4_pon_genomicsdbimport step
-# Each "task" operates on one interval
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Description: Runs gatk4_cohort_pon.sh in parallel,
+# for tasks that failed, as identified by gatk4_cohort_pon_check.sh
+# Usage: Adjust <project> and compute resource requests following the guide
+# below, then qsub gatk4_cohort_pon_run_parallel.pbs
+# Job resource requirements:
+# Per task requirements:
+#       For 46 human samples ~30X:
+#       1 CPU, 2.6GB of mem was required per task
+#       0.05 - 6.36min per task (average 0.19 min)
+# Author: Tracy Chew
+# tracy.chew@sydney.edu.au
+# Date last modified: 12/03/2021
+#
+# If you use this script towards a publication, please acknowledge the
+# Sydney Informatics Hub (or co-authorship, where appropriate).
+#
+# Suggested citation:
+# Sydney Informatics Hub, Core Research Facilities, University of Sydney,
+# 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
+# https://github.com/Sydney-Informatics-Hub/Bioinformatics
+#
+# Suggested acknowledgement:
+# The authors acknowledge the scientific and technical assistance
+# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
+# Hub and resources and services from the National Computational
+# Infrastructure (NCI), which is supported by the Australian Government
+# with access facilitated by the University of Sydney.
+#
+#########################################################
 
-#PBS -P oj47
-#PBS -N cohort_pon_missing
-#PBS -l walltime=03:00:00,ncpus=240,mem=960GB,wd
+#PBS -P <project>
+#PBS -N cohort_pon
+#PBS -l walltime=02:30:00,ncpus=48,mem=190GB,wd
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
-#PBS -o ./Logs/gatk4_cohort_pon/cohort_pon_missing.o
-#PBS -e ./Logs/gatk4_cohort_pon/cohort_pon_missing.e
-
-module load openmpi/4.0.2
-module load nci-parallel/1.0.0
+#PBS -l storage=scratch/<project>
+#PBS -o ../Logs/gatk4_cohort_pon_missing.o
+#PBS -e ../Logs/gatk4_cohort_pon_missing.e
 
 set -e
 
-# SCRIPT
-SCRIPT=./gatk4_cohort_pon.sh
 INPUTS=./Inputs/gatk4_cohort_pon_missing.inputs
-
-
-NCPUS=3 # CPUs per task
-
-echo "$(date) : GATK 4 CreateSomaticPanelOfNormals for a cohort  using interval databases created with GenomicsDBImport."
 
 #########################################################
 # Do not edit below this line
 #########################################################
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
+module load openmpi/4.0.2
+module load nci-parallel/1.0.0
+module load gatk/4.1.2.0
 
+# NCPUs = CPUs per task
+NCPUS=1
+
+# SCRIPT
+SCRIPT=./gatk4_cohort_pon.sh
+
+if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
 M=$(( CPN / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
