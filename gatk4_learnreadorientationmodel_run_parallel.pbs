@@ -7,6 +7,9 @@
 # Usage: Adjust <project> and compute resource requests following the guide
 # below, then qsub gatk4_learnreadorientationmodel_run_parallel.pbs
 # Job resource requirements:
+#       1 hugemem node to run 24 samples in parallel
+#       For 26 samples, usage was for 1 hugemem node was:
+#       1.42TB memory used, walltime=02:27:59, SU=355.16, E=0.37
 # Per task requirements:
 #       1 task (1 tumour-normal pair): 1CPU 28GB mem on average
 # Author: Tracy Chew
@@ -52,7 +55,7 @@ module load nci-parallel/1.0.0
 module load gatk/4.1.2.0
 
 # NCPUs = CPUs per task
-NCPUS=1
+NCPUS=2
 
 # SCRIPT
 SCRIPT=./gatk4_learnreadorientationmodel.sh
