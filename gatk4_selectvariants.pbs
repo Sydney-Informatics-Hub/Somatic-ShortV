@@ -33,12 +33,12 @@
 #
 #########################################################
 
-#PBS -P hm82
+#PBS -P <project>
 #PBS -N selectvariants
 #PBS -l walltime=04:00:00,ncpus=48,mem=192GB,wd
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -l storage=scratch/<project>
 #PBS -o ./Logs/selectvariants.o
 #PBS -e ./Logs/selectvariants.e
 
