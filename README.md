@@ -247,8 +247,18 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
    Adjust <project> and compute resource requests in `gatk4_getpileupsummaries_run_parallel.pbs`, then submit your job by:
   
         qsub gatk4_getpileupsummaries_run_parallel.pbs     
+        
+16.  Check that `GetPileupSummaries` ran successfully for all samples in `cohort.config`. The log files are checked for `SUCCESS` and `error` messages. The script also checks that the expected output `cohort_GetPileupSummaries/samples_pileups.table` exists and it not empty. 
+
+     First, edit the common_biallelic variable in gatk4_getpileupsummaries_check.sh so that it is consistent with what you used in step 15. Then:
+
+         sh gatk4_getpileupsummaries_check.sh /path/to/cohort.config
+         
+      The script will print the number of successful and unsuccessful tasks to the terminal. Failed tasks will be written to `Inputs/gatk4_getpileupsummaries_missing.inputs`. If there are failed tasks to re-run, adjust <project> and compute resource requests in `gatk4_getpileupsummaries_missing_run_parallel.pbs`, then submit your job by:
+ 
+         qsub gatk4_getpileupsummaries_missing_run_parallel.pbs
     
-16. Calculate the fraction of reads coming from cross sample contamination using `CalculateContamination` using pileups tables from `GetPileupSummaries` as inputs. The resulting contamination table is used in `FilterMutectCalls`. Create inputs by:
+17. Calculate the fraction of reads coming from cross sample contamination using `CalculateContamination` using pileups tables from `GetPileupSummaries` as inputs. The resulting contamination table is used in `FilterMutectCalls`. Create inputs by:
 
         sh gatk4_calculatecontamination_make_input.sh /path/to/cohort.config
         
@@ -264,7 +274,7 @@ You are finally ready to obtain a filtered set of somatic variants using `Filter
 * `TumorID_NormalID_contamination.table` (from GetPileupSummaries & CalculateContamination)
 * `TumourID_NormalID_read-orientation-model.tar.gz` (from Mutect2 & LearnReadOrientationModel)
 
-17. Create input files for each task (`FilterMutectCalls` for a single tumour normal pair) by:
+18. Create input files for each task (`FilterMutectCalls` for a single tumour normal pair) by:
 
         sh gatk4_filtermutectcalls_make_input.sh /path/to/cohort.config
 
