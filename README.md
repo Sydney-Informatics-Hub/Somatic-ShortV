@@ -244,9 +244,9 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
     
         sh gatk4_getpileupsummaries_make_input.sh /path/to/cohort.config
    
-   Adjust <project> and compute resource requests in `gatk4_getpileupsummaries_run_parallel.pbs`, then submit your job by:
+     Adjust <project> and compute resource requests in `gatk4_getpileupsummaries_run_parallel.pbs`, then submit your job by:
   
-        qsub gatk4_getpileupsummaries_run_parallel.pbs     
+          qsub gatk4_getpileupsummaries_run_parallel.pbs     
         
 16.  Check that `GetPileupSummaries` ran successfully for all samples in `cohort.config`. The log files are checked for `SUCCESS` and `error` messages. The script also checks that the expected output `cohort_GetPileupSummaries/samples_pileups.table` exists and it not empty. 
 
