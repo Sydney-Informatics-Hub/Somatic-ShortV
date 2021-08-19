@@ -284,7 +284,7 @@ You are finally ready to obtain a filtered set of somatic variants using `Filter
     
 # Cite us to support us!
  
-The Somatic-ShortV pipeline can be cited as DOI: 10.48546/workflowhub.workflow.148.1
+The Somatic-ShortV pipeline can be cited as DOI: https://doi.org/10.48546/workflowhub.workflow.148.1
 
 If you use our pipelines, please cite us:
 
