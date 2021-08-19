@@ -6,7 +6,7 @@
 # Usage:
 # Version: 2.0
 #
-# For more details see: https://github.com/Sydney-Informatics-Hub/Germline-ShortV
+# For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
 #
 # If you use this script towards a publication, support us by citing:
 #
