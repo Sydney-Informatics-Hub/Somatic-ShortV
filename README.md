@@ -282,6 +282,31 @@ You are finally ready to obtain a filtered set of somatic variants using `Filter
   
         qsub gatk4_filtermutectcalls_run_parallel.pbs             
     
+# Benchmarking metrics
+ 
+ The following benchmarks were obtained from processing 20 tumour-normal pairs (34X and 70X, human samples).  My apologies that the steps are not in order, I will amend this soon!
+ 
+ | #JobName                        | CPUs_requested | CPUs_used | Mem_requested | Mem_used | CPUtime    | CPUtime_mins | Walltime_req | Walltime_used | Walltime_mins | JobFS_req | JobFS_used | Efficiency | Service_units(CPU_hours) |
+|---------------------------------|----------------|-----------|---------------|----------|------------|--------------|--------------|---------------|---------------|-----------|------------|------------|--------------------------|
+| gatk4_cohort_pon_144            | 144            | 144       | 4.39TB        | 110.13GB | 16:39:15   | 999.25       | 5:00:00      | 0:24:51       | 24.85         | 1.46GB    | 9.08MB     | 0.28       | 178.92                   |
+| gatk4_cohort_pon_48             | 48             | 48        | 1.46TB        | 102.54GB | 17:26:26   | 1046.43      | 10:00:00     | 0:26:04       | 26.07         | 500.0MB   | 9.08MB     | 0.84       | 62.56                    |
+| gatk4_cohort_pon_96             | 96             | 96        | 2.93TB        | 110.97GB | 17:07:23   | 1027.38      | 10:00:00     | 0:26:07       | 26.12         | 1000.0MB  | 9.07MB     | 0.41       | 125.36                   |
+| gatk4_cohort_pon_gather_sort    | 1              | 1         | 18.0GB        | 4.28GB   | 0:02:18    | 2.3          | 1:00:00      | 0:03:15       | 3.25          | 100.0MB   | 0B         | 0.71       | 0.49                     |
+| gatk4_getpileupsummaries_exac   | 48             | 48        | 1.46TB        | 81.1GB   | 0:42:16    | 42.27        | 15:00:00     | 0:15:15       | 15.25         | 500.0MB   | 8.17MB     | 0.06       | 36.6                     |
+| gatk4_getpileupsummaries_gnomad | 48             | 48        | 1.46TB        | 1.31GB   | 0:00:14    | 0.23         | 15:00:00     | 0:00:04       | 0.07          | 500.0MB   | 6.24KB     | 0.07       | 0.16                     |
+| gatk4_mutect2_1920              | 1920           | 1920      | 7.5TB         | 6.61TB   | 1890:56:30 | 113456.5     | 4:00:00      | 1:07:04       | 67.07         | 3.91GB    | 32.77MB    | 0.88       | 4292.27                  |
+| gatk4_mutect2_2880              | 2880           | 2880      | 11.25TB       | 9.81TB   | 1963:57:43 | 117837.72    | 2:00:00      | 0:48:33       | 48.55         | 5.86GB    | 33.38MB    | 0.84       | 4660.8                   |
+| gatk4_mutect2_3840              | 3840           | 3840      | 15.0TB        | 13.07TB  | 2033:47:24 | 122027.4     | 2:00:00      | 0:39:04       | 39.07         | 7.81GB    | 32.77MB    | 0.81       | 5000.53                  |
+| gatk4_mutect2_960               | 960            | 960       | 3.75TB        | 3.3TB    | 1865:51:58 | 111951.97    | 4:00:00      | 2:05:44       | 125.73        | 1.95GB    | 32.77MB    | 0.93       | 4023.47                  |
+| gatk4_pon_1920                  | 1920           | 1920      | 7.5TB         | 6.39TB   | 1546:53:50 | 92813.83     | 2:00:00      | 0:50:06       | 50.1          | 3.91GB    | 21.23MB    | 0.96       | 3206.4                   |
+| gatk4_pon_2880                  | 2880           | 2880      | 11.25TB       | 8.62TB   | 1601:44:32 | 96104.53     | 2:00:00      | 0:35:13       | 35.22         | 5.86GB    | 21.23MB    | 0.95       | 3380.8                   |
+| gatk4_pon_3840                  | 3840           | 3840      | 15.0TB        | 11.36TB  | 1859:29:08 | 111569.13    | 2:00:00      | 0:31:43       | 31.72         | 7.81GB    | 21.23MB    | 0.92       | 4059.73                  |
+| gatk4_pon_960                   | 960            | 960       | 3.75TB        | 3.27TB   | 1537:26:16 | 92246.27     | 2:00:00      | 1:38:03       | 98.05         | 1.95GB    | 21.1MB     | 0.98       | 3137.6                   |
+| gatk4_pon_gathervcfs_20         | 20             | 20        | 640.0GB       | 42.43GB  | 1:04:42    | 64.7         | 2:00:00      | 1:44:51       | 104.85        | 500.0MB   | 8.09MB     | 0.03       | 104.85                   |
+| gatk4_pon_genomicsdbimport_144  | 144            | 144       | 4.39TB        | 698.85GB | 22:28:42   | 1348.7       | 5:00:00      | 0:14:20       | 14.33         | 1.46GB    | 8.96MB     | 0.65       | 103.2                    |
+| gatk4_pon_genomicsdbimport_48   | 48             | 48        | 1.46TB        | 314.08GB | 21:27:48   | 1287.8       | 10:00:00     | 0:30:33       | 30.55         | 500.0MB   | 8.95MB     | 0.88       | 73.32                    |
+| gatk4_pon_genomicsdbimport_96   | 96             | 96        | 2.93TB        | 602.88GB | 21:48:05   | 1308.08      | 10:00:00     | 0:18:14       | 18.23         | 1000.0MB  | 8.95MB     | 0.75       | 87.52                    |
+ 
 # Cite us to support us!
  
 The Somatic-ShortV pipeline can be cited as DOI: https://doi.org/10.48546/workflowhub.workflow.148.1
