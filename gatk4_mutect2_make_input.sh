@@ -3,34 +3,26 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Description: Creates inputs for gatk4_mutect2_run_parallel.pbs
-# This runs Mutect2 for tumour-normal pairs for 3,201 genomic intervals
-# Usage: Adjust <project> and compute resource requests following the guide
-# below, then qsub gatk4_hc_run_parallel.pbs
-# Job resource requirements for human datasets:
-# walltime=02:00:00 (job expected to complete in ~1 hour)
-# ncpus=48*2*N (N=number of samples in ../<cohort>.config)
-# mem=192*2*N GB (N=number of samples in ../<cohort>.config)
-# Per task requirements:
-# 1 task requires 1 CPU, 4GB mem
-# Author: Tracy Chew
-# tracy.chew@sydney.edu.au
-# Date last modified: 24/02/2021
+# Usage: qsub gatk4_hc_run_parallel.pbs
+# Version: 1.0
 #
-# If you use this script towards a publication, please acknowledge the
-# Sydney Informatics Hub (or co-authorship, where appropriate).
+# For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
 #
-# Suggested citation:
+# If you use this script towards a publication, support us by citing:
+#
+# Suggest citation:
 # Sydney Informatics Hub, Core Research Facilities, University of Sydney,
 # 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
-# https://github.com/Sydney-Informatics-Hub/Bioinformatics
+# https://github.com/Sydney-Informatics-Hub/Germline-ShortV
+#
+# Please acknowledge the Sydney Informatics Hub and the facilities:
 #
 # Suggested acknowledgement:
-# The authors acknowledge the scientific and technical assistance
-# <or e.g. bioinformatics assistance of <PERSON>> of Sydney Informatics
-# Hub and resources and services from the National Computational
-# Infrastructure (NCI), which is supported by the Australian Government
-# with access facilitated by the University of Sydney.
+# The authors acknowledge the technical assistance provided by the Sydney
+# Informatics Hub, a Core Research Facility of the University of Sydney
+# and the Australian BioCommons which is enabled by NCRIS via Bioplatforms
+# Australia. The authors acknowledge the use of the National Computational
+# Infrastructure (NCI) supported by the Australian Government.
 #
 #########################################################
 
