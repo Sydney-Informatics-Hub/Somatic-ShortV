@@ -4,7 +4,7 @@
 #
 # Platform: NCI Gadi HPC
 # Usage:
-# Version: 2.0
+# Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
 #
