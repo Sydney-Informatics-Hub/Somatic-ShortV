@@ -3,8 +3,8 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Usage:
-# Version: 2.0
+# Usage: qsub gatk4_calculatecontamination_run_parallel.pbs
+# Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
 #
