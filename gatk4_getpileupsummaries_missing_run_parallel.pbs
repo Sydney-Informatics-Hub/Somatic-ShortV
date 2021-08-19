@@ -1,15 +1,41 @@
 #!/bin/bash
 
+#########################################################
+#
+# Platform: NCI Gadi HPC
+# Usage: qsub gatk4_getpileupsummaries_missing_run_parallel.pbs
+# Version: 1.0
+#
+# For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
+#
+# If you use this script towards a publication, support us by citing:
+#
+# Suggest citation:
+# Sydney Informatics Hub, Core Research Facilities, University of Sydney,
+# 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>,
+# https://github.com/Sydney-Informatics-Hub/Germline-ShortV
+#
+# Please acknowledge the Sydney Informatics Hub and the facilities:
+#
+# Suggested acknowledgement:
+# The authors acknowledge the technical assistance provided by the Sydney
+# Informatics Hub, a Core Research Facility of the University of Sydney
+# and the Australian BioCommons which is enabled by NCRIS via Bioplatforms
+# Australia. The authors acknowledge the use of the National Computational
+# Infrastructure (NCI) supported by the Australian Government.
+#
+#########################################################
+
 # Run GATK4 GetPileupSummaries
 # 1 task = 1 bam
 # 28Gb mem per task, ~ 25min walltime
 
-#PBS -P hm82
+#PBS -P 
 #PBS -N getpileupsummaries
 #PBS -l walltime=15:00:00,ncpus=48,mem=1500GB,wd
 #PBS -q hugemem
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -l storage=scratch/public+scratch/
 #PBS -o ./Logs/gatk4_getpileupsummaries/getpileupsummaries_missing.o
 #PBS -e ./Logs/gatk4_getpileupsummaries/getpileupsummaries_missing.e
 
