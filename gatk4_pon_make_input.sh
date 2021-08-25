@@ -33,6 +33,7 @@ then
 fi
 
 config=$1
+cohort=$(basename "$config" | cut -d. -f 1) 
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
 scatterlist=$scatterdir/3200_ordered_exclusions.list
