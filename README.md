@@ -23,9 +23,19 @@ The minimum requirements and high level directory structure resemble the followi
 
 In your high level directory `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`. `Somatic-ShortV` contains the scripts of the workflow. Submit all jobs within `Somatic-ShortV`.
 
-If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, you are ready to start, otherwise please follow the remaining set up steps.
+#### 2. Tool dependances
 
-#### 2. Prepare your `<cohort>.config` file
+The tools required to run this pipeline include:
+
+* `openmpi/4.1.0`
+* `nci-parallel/1.0.0a`
+* GATK4. The pipeline is compatible with versions: `gatk/4.1.2.0`,`gatk/4.1.8.1`. It has not been tested with other versions of GATK4. 
+
+Use `module avail` to check if they are currently globally installed.
+
+If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, you can skip the remaining set up steps.
+
+#### 3. Prepare your `<cohort>.config` file
 
 * [See here](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#1-prepare-your-cohortconfig-file) for a full description
 * `<cohort>.config` is a TSV file with one row per unique sample, matching the format in the example below. Start header lines with `#`
@@ -44,14 +54,14 @@ The below is an example `<cohort>.config` with two patient samples. Patient 1 ha
 |SAMPLE4  |PATIENT2-N    |AGRF      |                  |
 |SAMPLE5  |PATIENT2-T1    |AGRF      |                  |
 
-#### 3. Prepare your BAM files
+#### 4. Prepare your BAM files
 
 * BAM files should be at the sample level
 * BAM and BAI (index) filenames should follow:
   * `<patientID>-N.final.bam` for normal samples
   * `<patientID>-<tumourID>` for tumour samples
 
-#### 4. Download the `Reference` directory
+#### 5. Download the `Reference` directory
 
 Ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#3-prepare-the-reference-genome). This contains input data required for Somatic-ShortV. 
 
