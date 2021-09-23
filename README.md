@@ -6,7 +6,7 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 # Set up
 
-This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, or by following the steps below. The scripts use relative paths, so correct set-up is important. 
+This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, and/or by following the steps below. The scripts use relative paths, so correct set-up is important. 
 
 The minimum requirements and high level directory structure resemble the following:
 
