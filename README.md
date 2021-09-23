@@ -17,7 +17,7 @@ The minimum requirements and high level directory structure resemble the followi
 └── Somatic-ShortV
 ```
 
-`Somatic-ShortV` will be your working directory.
+`Somatic-ShortV` will be your working directory, submit your jobs within this directory.
 
 #### 1. Clone this respository 
 
@@ -33,6 +33,16 @@ If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-
   * Normal samples should be named `<patientID>-N`
   * Matched tumour samples should be named `<patientID>-<tumourID>`. Multiple tumour samples are OK.
   * `<patientID>` is used to find normal and tumour samples belonging to a single patient
+
+The below is an example `<cohort>.config` with two patient samples. Patient 1 has 2 matched tumour samples.
+
+|#SampleID|LabSampleID|Seq_centre|Library(default=1)|
+|---------|-----------|----------|------------------|
+|SAMPLE1  |PATIENT1-N    |AGRF      |                  |
+|SAMPLE2  |PATIENT1-T1    |AGRF      |                  |
+|SAMPLE3  |PATIENT1-T2    |AGRF      |                  |
+|SAMPLE4  |PATIENT2-N    |AGRF      |                  |
+|SAMPLE5  |PATIENT2-T1    |AGRF      |                  |
 
 #### 3. Prepare your BAM files
 
