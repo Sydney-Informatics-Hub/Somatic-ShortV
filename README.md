@@ -19,7 +19,13 @@ The minimum requirements and high level directory structure resemble the followi
 
 `Somatic-ShortV` will be your working directory.
 
-#### 1. Prepare your `<cohort>.config` file
+#### 1. Clone this respository 
+
+In your high level directory `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`. `Somatic-ShortV` contains the scripts of the workflow. Submit all jobs within `Somatic-ShortV`.
+
+If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, you are ready to start, otherwise please follow the remaining set up steps.
+
+#### 2. Prepare your `<cohort>.config` file
 
 * [See here](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#1-prepare-your-cohortconfig-file) for a full description
 * `<cohort>.config` is a TSV file with one row per unique sample, matching the format #SampleID\tLabSampleID\tSeqCentre\tLibrary(default=1)
@@ -28,22 +34,18 @@ The minimum requirements and high level directory structure resemble the followi
   * Matched tumour samples should be named `<patientID>-<tumourID>`. Multiple tumour samples are OK.
   * `<patientID>` is used to find normal and tumour samples belonging to a single patient
 
-#### 2. Prepare your BAM files
+#### 3. Prepare your BAM files
 
 * BAM files should be at the sample level
 * BAM and BAI (index) filenames should follow:
   * `<patientID>-N.final.bam` for normal samples
   * `<patientID>-<tumourID>` for tumour samples
 
-#### 3. Download the `Reference` directory
+#### 4. Download the `Reference` directory
 
 Ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#3-prepare-the-reference-genome). This contains input data required for Somatic-ShortV. 
 
 The reference used includes __Human genome: hg38 + alternate contigs__
-
-#### 4. Clone this respository 
-
-In your high level directory `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`. `Somatic-ShortV` contains the scripts of the workflow. Submit all jobs within `Somatic-ShortV`.
 
 # User guide
 
