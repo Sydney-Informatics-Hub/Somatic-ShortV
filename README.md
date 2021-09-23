@@ -28,7 +28,7 @@ If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-
 #### 2. Prepare your `<cohort>.config` file
 
 * [See here](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#1-prepare-your-cohortconfig-file) for a full description
-* `<cohort>.config` is a TSV file with one row per unique sample, matching the format #SampleID\tLabSampleID\tSeqCentre\tLibrary(default=1)
+* `<cohort>.config` is a TSV file with one row per unique sample, matching the format in the example below. Start header lines with `#`
 * LabSampleID's are your in-house sample IDs. Input and output files are named with this ID.
   * Normal samples should be named `<patientID>-N`
   * Matched tumour samples should be named `<patientID>-<tumourID>`. Multiple tumour samples are OK.
