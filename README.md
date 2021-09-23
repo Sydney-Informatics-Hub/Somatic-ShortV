@@ -6,32 +6,44 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 # Set up
 
-## GRCh38/hg38 + ALT contigs
+This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, or by following the steps below. The scripts use relative paths, so correct set-up is important. 
 
-The Somatic-ShortV pipeline works seamlessly with the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline. The scripts use relative paths, so correct set-up is important. 
-
-Upon completion of [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM):
-
-1. Change to the working directory where your final bams were created.
-* ensure you have a `<cohort>.config` file, that is a tab-delimited file including `#SampleID	LabSampleID	SeqCentre	Library(default=1)` (the same config or a subset of samples from the config used in [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) is perfect). Sample GVCFs and multi-sample VCFs will be created for samples included in <cohort>.config. Sample ID's must end in -B or -N (this is to denote that they are normal, not tumour samples). 
-* ensure you have a `Final_bams` directory, containing `<labsampleid>.final.bam` and `<labsampleid>.final.bai` files. <labsampleid> should match LabSampleID column in your `<cohort>.config` file.
- * ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM). This contains input data required for Somatic-ShortV 
-2. Clone this respository by `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`
-
-Your high level directory structure should resemble the following:
+The minimum requirements and high level directory structure resemble the following:
 
 ```bash
-├── Fastq
-├── Fastq_to_BAM_job_logs
-├── Fastq_to_BAM_program_logs
-├── Fastq_to_BAM_scripts_and_inputs
 ├── Final_bams
-├── samples.config
+├── <cohort>.config
 ├── Reference
 └── Somatic-ShortV
 ```
 
 `Somatic-ShortV` will be your working directory.
+
+#### 1. Prepare your `<cohort>.config` file
+
+* [See here](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#1-prepare-your-cohortconfig-file) for a full description
+* `<cohort>.config` is a TSV file with one row per unique sample, matching the format #SampleID\tLabSampleID\tSeqCentre\tLibrary(default=1)
+* LabSampleID's are your in-house sample IDs. Input and output files are named with this ID.
+  * Normal samples should be named `<patientID>-N`
+  * Matched tumour samples should be named `<patientID>-<tumourID>`. Multiple tumour samples are OK.
+  * `<patientID>` is used to find normal and tumour samples belonging to a single patient
+
+#### 2. Prepare your BAM files
+
+* BAM files should be at the sample level
+* BAM and BAI (index) filenames should follow:
+  * `<patientID>-N.final.bam` for normal samples
+  * `<patientID>-<tumourID>` for tumour samples
+
+#### 3. Download the `Reference` directory
+
+Ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#3-prepare-the-reference-genome). This contains input data required for Somatic-ShortV. 
+
+The reference used includes __Human genome: hg38 + alternate contigs__
+
+#### 4. Clone this respository 
+
+In your high level directory `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`. `Somatic-ShortV` contains the scripts of the workflow. Submit all jobs within `Somatic-ShortV`.
 
 # User guide
 
