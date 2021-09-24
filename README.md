@@ -76,7 +76,7 @@ The below is an example `<cohort>.config` with two patient samples. Patient 1 ha
 * BAM files should be at the sample level
 * BAM and BAI (index) filenames should follow:
   * `<patientID>-N.final.bam` for normal samples
-  * `<patientID>-<tumourID>` for tumour samples
+  * `<patientID>-<tumourID>.final.bam` for tumour samples
 
 #### 5. Download the `Reference` directory
 
@@ -88,7 +88,7 @@ The reference used includes __Human genome: hg38 + alternate contigs__ and a lis
 
 The following will perform somatic short variant calling for all samples present in `<cohort>.config`. 
 
-! After setting up, __change into and submit jobs from the `Somatic-ShortV` directory__. 
+__! After setting up, change into and submit jobs from the `Somatic-ShortV` directory__. 
 
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
 
