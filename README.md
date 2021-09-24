@@ -4,6 +4,21 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 <img src="https://user-images.githubusercontent.com/49257820/94503907-ebb0cc80-024a-11eb-800c-41854b1f041c.png" width="110%" height="110%">
 
+#### Reference genome: GRCh38/hg38 + ALT contigs
+
+By default, this pipeline is compatible with BAMs aligned to the __GRCh38/hg38 + ALT contigs reference__ genome. Scatter-gather parallelism has been designed to operate over 3,200 evenly sized genomic intervals (~1Mb in size) across your sample cohort. Some [genomic intervals are excluded](#excluded-sites) - these typically include repetitive regions which can significantly impede on compute performance. 
+
+#### Excluded sites
+
+Excluded sites are listed in the Delly group's [sv_repeat_telomere_centromere.bed](https://gist.github.com/chapmanb/4c40f961b3ac0a4a22fd) file. This is included in the `References` dataset. The BED file contains:
+
+* telemeres
+* centromeres
+* chrUn (unplaced)
+* chrUn_XXXXX_decoy (decoy)
+* chrN_XXXXX_random (unlocalized)
+* chrEBV
+
 # Set up
 
 This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, and/or by following the steps below. The scripts use relative paths, so correct set-up is important. 
@@ -67,7 +82,7 @@ The below is an example `<cohort>.config` with two patient samples. Patient 1 ha
 
 Ensure you have `Reference` directory from [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#3-prepare-the-reference-genome). This contains input data required for Somatic-ShortV. 
 
-The reference used includes __Human genome: hg38 + alternate contigs__
+The reference used includes __Human genome: hg38 + alternate contigs__ and a list of __scatter interval files__ for scatter-gather parallelism. 
 
 # User guide
 
@@ -84,7 +99,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
 #### 1. Start creating a panel of normals (PoN)
 
-The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi`. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
+The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats`. By default, this job scatters the task into 3,200 genomic intervals per sample. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
 
 ```
 sh gatk4_pon_make_input.sh /path/to/cohort.config
@@ -96,10 +111,12 @@ Adjust <project> and compute resource requests to suit your cohort, then:
 qsub gatk4_pon_run_parallel.pbs
 ```
  
-2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (`gatk_pon_missing.inputs`). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
+2. The next script checks that `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats` files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (`gatk_pon_missing.inputs`). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
+
+ ```
+nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
+```
  
-         nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
-         
     The checker script can be run on the login node and is quick. I advise using the `nohup` command to run this script so that the script runs without being killed. Things can get messy otherwise (especially if the script stops mid tar archiving)! Check `nohup.out` (appends stdout of nohup to file) to see if your job ran successfully:
 
         cat nohup.out
