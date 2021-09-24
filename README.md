@@ -86,7 +86,9 @@ The reference used includes __Human genome: hg38 + alternate contigs__ and a lis
 
 # User guide
 
-The following will perform somatic short variant calling for all samples present in `<cohort>.config`. AFter setting up, __change into and submit jobs from the `Somatic-ShortV` directory__. 
+The following will perform somatic short variant calling for all samples present in `<cohort>.config`. 
+
+! After setting up, __change into and submit jobs from the `Somatic-ShortV` directory__. 
 
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
 
