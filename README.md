@@ -4,11 +4,11 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 <img src="https://user-images.githubusercontent.com/49257820/94503907-ebb0cc80-024a-11eb-800c-41854b1f041c.png" width="110%" height="110%">
 
-#### Features of this pipeline
+### Features of this pipeline
 
 * High compute efficiency
 * Scalable through scatter-gather parallelism with `openmpi` and `nci.parallel`
-* Checker scripts
+* Checker scripts (no KSU cost)
 * Checkpointing and resumption of only failed tasks if required
 * Support: this repository is actively monitored
 
