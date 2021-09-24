@@ -4,7 +4,7 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 <img src="https://user-images.githubusercontent.com/49257820/94503907-ebb0cc80-024a-11eb-800c-41854b1f041c.png" width="110%" height="110%">
 
-#### Reference genome: GRCh38/hg38 + ALT contigs
+### Reference genome: GRCh38/hg38 + ALT contigs
 
 By default, this pipeline is compatible with BAMs aligned to the __GRCh38/hg38 + ALT contigs reference__ genome. Scatter-gather parallelism has been designed to operate over 3,200 evenly sized genomic intervals (~1Mb in size) across your sample cohort. Some [genomic intervals are excluded](#excluded-sites) - these typically include repetitive regions which can significantly impede on compute performance. 
 
