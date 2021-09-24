@@ -4,6 +4,14 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 
 <img src="https://user-images.githubusercontent.com/49257820/94503907-ebb0cc80-024a-11eb-800c-41854b1f041c.png" width="110%" height="110%">
 
+#### Features of this pipeline
+
+* High compute efficiency
+* Scalable through scatter-gather parallelism with `openmpi` and `nci.parallel`
+* Checker scripts
+* Checkpointing and resumption of only failed tasks if required
+* Support: this repository is actively monitored
+
 ### Reference genome: GRCh38/hg38 + ALT contigs
 
 By default, this pipeline is compatible with BAMs aligned to the __GRCh38/hg38 + ALT contigs reference__ genome. Scatter-gather parallelism has been designed to operate over 3,200 evenly sized genomic intervals (~1Mb in size) across your sample cohort. Some [genomic intervals are excluded](#excluded-sites) - these typically include repetitive regions which can significantly impede on compute performance. 
@@ -86,7 +94,7 @@ The reference used includes __Human genome: hg38 + alternate contigs__ and a lis
 
 # User guide
 
-The following will perform somatic short variant calling for all samples present in `<cohort>.config`. 
+This pipeline will perform [GATK4's Somatic Short Variant Discovery](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-) (SNVs and Indels) best practices workflows for all samples present in `<cohort>.config`. 
 
 __! After setting up, change into and submit jobs from the `Somatic-ShortV` directory__. 
 
@@ -276,7 +284,9 @@ qsub gatk4_cohort_pon_run_parallel.pbs
 Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
 ```
-nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
+nohup sh gatk4_cohort_pon_check.sh /path/to/cohort.config 2> /dev/null &
+```
+ 
        cat nohup.out     
 
 ### 5. Gather intervals and sort into a single, multisample PoN
@@ -471,11 +481,6 @@ You are finally ready to obtain a filtered set of somatic variants using `Filter
 # Cite us to support us!
  
 The Somatic-ShortV pipeline can be cited as DOI: https://doi.org/10.48546/workflowhub.workflow.148.1
-
-If you use our pipelines, please cite us:
-
-Sydney Informatics Hub, Core Research Facilities, University of Sydney, 2021, The Sydney Informatics Hub Bioinformatics Repository, <date accessed>, https://github.com/Sydney-Informatics-Hub/Bioinformatics
-
 
 # Acknowledgements
 
