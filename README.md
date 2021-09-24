@@ -114,7 +114,7 @@ Edit and run the script below to scatter task inputs for parallel processing. Ad
 ```
 qsub gatk4_pon_run_parallel.pbs
 ```
-### 2. Perform checks 
+#### Perform checks 
 
 The next script checks that tasks for the previous job have completed successfully. Inputs for failed tasks are written to `gatk_pon_missing.inputs` for re-submission. Checks include: `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats` files exist and are non-empty; GATK logs are checked for "SUCCESS" or "error" messages.
 
@@ -136,13 +136,13 @@ If there are tasks to re-run from step 1 (check number of tasks to re-run using 
 qsub gatk4_pon_missing_run_parallel.pbs
 ```
 
-The steps in "2. Perform checks" can be repeated until all tasks pass checks.
+The steps under "Perform checks" above can be repeated until all tasks pass checks.
  
 #### gatk4_pon passes checks
  
 If all checks pass, the checker script prints task duration and memory per task (genomic interval) to `./Logs/gatk4_pon/sample`. Each sample log directory is archived into `.Logs/gatk4_pon/sample_logs.tar.gz`. Tar archives reduce iNode quota.
 
-### 3. Gather interval VCFs into sample level VCFs
+### 2. Gather interval VCFs into sample level VCFs
  
 Gather interval `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` into single sample, gzipped VCFs. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `../cohort_PoN`
 
@@ -164,7 +164,7 @@ Edit and run the script below to scatter task inputs for parallel processing. Ad
 qsub gatk4_pon_gathervcfs_run_parallel.pbs
 ```
 
-### 4. Perform checks
+#### Perform checks
  
 The next script checks that tasks for the previous job have completed successfully. Inputs for failed tasks are written to `./Inputs/gatk_pon_gathervcfs_missing.inputs` for re-submission. The script checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files are present and not empty in `./cohort_PoN`. Log files are checked for errors.
 
@@ -185,7 +185,7 @@ qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 
 We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage
  
-### 5. Consolidate samples with GenomicsDBImport
+### 3. Consolidate samples with GenomicsDBImport
  
 The downstream analysis are performed across multiple samples and sample data is first consolidated with GenomicsDBImport. By default, this occurs at 3,200 genomic intervals. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), perform the additional steps in "Including previously analysed samples".
 
@@ -226,28 +226,52 @@ sh setup_pon_from_concat_config.sh samplesSet1andSet2.config
 Create inputs:
  
 ```
-sh gatk4_pon_genomicsdbimport_make_input.sh ../HRPCa_80.config
+sh gatk4_pon_genomicsdbimport_make_input.sh /path/to/cohort.config
 ```
-Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
+ 
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort (this job scales to cohort size with memory), then:
  
 ```   
 qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 ```
+
+#### Perform checks
          
-      Check the job when it's complete by: 
+Check the job when it's complete by: 
       
-         nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
-         cat nohup.out
-
-6. Create PoN per genomic interval. Here, hg38 gnomAD are used as a germline resource by default (`af-only-gnomad.hg38.vcf.gz` obtained from [GATK's Google Cloud Resource Bucket](https://console.cloud.google.com/storage/browser/gatk-best-practices/somatic-hg38;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false). You may wish to change this by specifying the resource you wish to use in the `gatk4_cohort_pon_make_input.sh` file at `germline=`
-
-       sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config
-       
-    Adjust <project> and compute resource requests in `gatk4_cohort_pon_run_parallel.pbs`, then submit your job by:
+```
+nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
+```
  
-       qsub gatk4_cohort_pon_run_parallel.pbs
+Use `cat nohup.out` to see if there are any failed tasks.
+ 
+#### Re-running failed gatk4_pon_genomicsdbimport_missing.sh tasks
+
+ Check the number of tasks to re-run using `wc -l ./Inputs/gatk4_pon_genomicsdbimport_missing.inputs`. Adjust <project> and compute resource requests in `gatk4_pon_genomicsdbimport_missing_run_parallel.pbs` then run it:
+
+```
+qsub gatk4_pon_genomicsdbimport_missing_run_parallel.pbs
+```
+ 
+### 4. Create PoN per genomic interval
+
+Here, hg38 gnomAD are used as a germline resource by default (`af-only-gnomad.hg38.vcf.gz` obtained from [GATK's Google Cloud Resource Bucket](https://console.cloud.google.com/storage/browser/gatk-best-practices/somatic-hg38;tab=objects?pli=1&prefix=&forceOnObjectsSortingFiltering=false). You may wish to change this by specifying the resource you wish to use in the `gatk4_cohort_pon_make_input.sh` file at `germline=`
+
+Create inputs: 
+
+```
+sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config
+```
+
+Adjust <project> and compute resource requests in `gatk4_cohort_pon_run_parallel.pbs`, then submit your job by:
+
+```
+qsub gatk4_cohort_pon_run_parallel.pbs
+```
        
-7. Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
+#### Perform checks
+
+Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
        nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
        cat nohup.out     
