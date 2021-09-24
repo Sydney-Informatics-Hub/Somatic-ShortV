@@ -10,7 +10,7 @@ By default, this pipeline is compatible with BAMs aligned to the __GRCh38/hg38 +
 
 #### Excluded sites
 
-Excluded sites are listed in the Delly group's [sv_repeat_telomere_centromere.bed](https://gist.github.com/chapmanb/4c40f961b3ac0a4a22fd) file. This is included in the `References` dataset. The BED file contains:
+Excluded sites are listed in the Delly group's [sv_repeat_telomere_centromere.bed](https://gist.github.com/chapmanb/4c40f961b3ac0a4a22fd) file. This is included in the `Reference` dataset. The BED file contains:
 
 * telemeres
 * centromeres
@@ -21,7 +21,7 @@ Excluded sites are listed in the Delly group's [sv_repeat_telomere_centromere.be
 
 # Set up
 
-This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, and/or by following the steps below. The scripts use relative paths, so correct set-up is important. 
+This pipeline can be implemented after running the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline. The scripts use relative paths, so correct set-up is important. 
 
 The minimum requirements and high level directory structure resemble the following:
 
@@ -95,45 +95,66 @@ __Adding new samples to a cohort for PoN__: If you have sequenced new samples be
 
 __18/03/21__ Please check Log directory paths in PBS scripts
 
-## Create Panel of Normals
+## Create the Panel of Normals
 
-#### 1. Start creating a panel of normals (PoN)
+### 1. Start creating a panel of normals (PoN)
 
-The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats`. By default, this job scatters the task into 3,200 genomic intervals per sample. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
+The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats`. By default, this job scatters the task into 3,200 genomic intervals per sample (index is a number given to a unique interval). Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
+
+Create task inputs: 
 
 ```
 sh gatk4_pon_make_input.sh /path/to/cohort.config
 ```
 
-Adjust <project> and compute resource requests to suit your cohort, then:
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
 
 ```
 qsub gatk4_pon_run_parallel.pbs
 ```
- 
-2. The next script checks that `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats` files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (`gatk_pon_missing.inputs`). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
+### 2. Perform checks 
 
- ```
-nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
+The next script checks that tasks for the previous job have completed successfully. Inputs for failed tasks are written to `gatk_pon_missing.inputs` for re-submission. Checks include: `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats` files exist and are non-empty; GATK logs are checked for "SUCCESS" or "error" messages.
+
+The checker script can be run on the login node. I advise using the `nohup` command to run this script so that the script runs without being killed. 
+ 
+Replace  `/path/to/cohort.config` with your `cohort.config` file and run:
+ 
+```
+nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null 1> ./Logs/gatk4_pon_check.log &
 ```
  
-    The checker script can be run on the login node and is quick. I advise using the `nohup` command to run this script so that the script runs without being killed. Things can get messy otherwise (especially if the script stops mid tar archiving)! Check `nohup.out` (appends stdout of nohup to file) to see if your job ran successfully:
-
-        cat nohup.out
-        
-    If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk4_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
+Check the output by `cat ./Logs/gatk_pon_check.log` to see if the job was successful. 
  
-        qsub gatk4_pon_missing_run_parallel.pbs
+#### Re-running failed gatk4_pon.sh tasks
+ 
+If there are tasks to re-run from step 1 (check number of tasks to re-run using `wc -l Inputs/gatk4_pon_missing.inputs`), re-run the failed tasks. After adjusting <project> and compute resource requests (usually one node normal node is sufficient for ~3200 tasks) in `gatk4_pon_missing_run_parallel.pbs`, submit the job by:
+ 
+```
+qsub gatk4_pon_missing_run_parallel.pbs
+```
 
-3. Gather step 1 per interval PoN VCFs into a single zipped GVCFs per sample. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `./cohort_PoN`
+The steps in "2. Perform checks" can be repeated until all tasks pass checks.
+ 
+#### gatk4_pon passes checks
+ 
+If all checks pass, the script prints task duration and memory per interval to `./Logs/gatk4_pon/sample`, then each sample log directory is archived into `.Logs/gatk4_pon/sample_logs.tar.gz` which can be backed up. Tar archives reduce iNode quota. 
 
-         sh gatk4_pon_gathervcfs_make_input.sh /path/to/config
-         
-   Adjust <project> and compute resource requests to suit your cohort. 
+3. Gather step 1 genomic interval level `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` into single sample, gzipped VCFs. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `./cohort_PoN`
 
-         qsub gatk4_pon_gathervcfs_run_parallel.pbs
-         
-   __Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
+Create inputs:
+ 
+```
+sh gatk4_pon_gathervcfs_make_input.sh /path/to/config
+```         
+
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
+
+```
+qsub gatk4_pon_gathervcfs_run_parallel.pbs
+```
+ 
+__Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
 
 4. Check pon gathervcfs from step 3. Checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are present and not empty in `./cohort_PoN`. Checks for ERROR messages in log files. Cleans up by removing interval `pon.vcf` and `pon.vcf.tbi` files if all checks have passed. 
 
