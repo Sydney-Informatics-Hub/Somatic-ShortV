@@ -97,7 +97,7 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
 ## Create the Panel of Normals
 
-### 1. Start creating a panel of normals (PoN)
+### 1. Scatter and create PoN across genomic intervals
 
 The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` and `sample.pon.index.vcf.stats`. By default, this job scatters the task into 3,200 genomic intervals per sample (index is a number given to a unique interval). Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
 
@@ -138,49 +138,99 @@ The steps in "2. Perform checks" can be repeated until all tasks pass checks.
  
 #### gatk4_pon passes checks
  
-If all checks pass, the script prints task duration and memory per interval to `./Logs/gatk4_pon/sample`, then each sample log directory is archived into `.Logs/gatk4_pon/sample_logs.tar.gz` which can be backed up. Tar archives reduce iNode quota. 
+If all checks pass, the checker script prints task duration and memory per task (genomic interval) to `./Logs/gatk4_pon/sample`. Each sample log directory is archived into `.Logs/gatk4_pon/sample_logs.tar.gz`. Tar archives reduce iNode quota.
 
-3. Gather step 1 genomic interval level `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` into single sample, gzipped VCFs. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `./cohort_PoN`
+### 3. Gather interval VCFs into sample level VCFs
+ 
+Gather interval `sample.pon.index.vcf`, `sample.pon.index.vcf.idx` into single sample, gzipped VCFs. `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are wrtten to `../cohort_PoN`
 
-Create inputs:
+Create inputs (1 sample per task, an arguments file is created per sample). This can actually take a while and I recommend using nohup if you have > 200 samples.
  
 ```
-sh gatk4_pon_gathervcfs_make_input.sh /path/to/config
+sh gatk4_pon_gathervcfs_make_input.sh /path/to/cohort.config
 ```         
+
+Or with nohup (progress will be written to `nohup.out`:
+
+```
+nohup gatk4_pon_gathervcfs_make_input.sh /path/to/cohort.config 2>&1 &
+``` 
 
 Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
 
 ```
 qsub gatk4_pon_gathervcfs_run_parallel.pbs
 ```
+
+### 4. Perform checks
  
-__Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi` to long term storage
+The next script checks that tasks for the previous job have completed successfully. Inputs for failed tasks are written to `./Inputs/gatk_pon_gathervcfs_missing.inputs` for re-submission. The script checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` files are present and not empty in `./cohort_PoN`. Log files are checked for errors.
 
-4. Check pon gathervcfs from step 3. Checks `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` are present and not empty in `./cohort_PoN`. Checks for ERROR messages in log files. Cleans up by removing interval `pon.vcf` and `pon.vcf.tbi` files if all checks have passed. 
+Run this script on the login node (quick):
+ 
+```
+sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
+```         
 
-         sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
+#### Re-running failed gatk4_pon_gathervcfs.sh tasks
+ 
+Check the number of tasks to re-run using `wc -l ./Inputs/gatk4_pon_gathervcfs_missing.inputs`. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
+
+```   
+qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
+```
+#### gatk4_pon_gathervcfs passes checks
+
+We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage
+ 
+### 5. Consolidate samples with GenomicsDBImport
+ 
+The downstream analysis are performed across multiple samples and sample data is first consolidated with GenomicsDBImport. By default, this occurs at 3,200 genomic intervals. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), perform the additional steps in "Including previously analysed samples".
+
+#### Including previously analysed samples
+
+Downstream steps require:
+ 
+* A `cohort.config` file
+* The directory `../cohort_PoN` containing `sample.pon.vcf.gz`, `sample.pon.vcf.gz.tbi` for each sample in `cohort.config`
+ 
+These can be created with some simple commands, copying data or using symbolic links. The example below shows how this can be done if you used this pipeline to analyse a separate cohort:
+ 
+```bash
+├── Final_bams
+├── samplesSet1.config # Previously analysed cohort
+├── samplesSet2.config # Currently analysed cohort
+├── samplesSet1andSet2.config # Joined cohort - this needs to be created
+├── samplesSet1_PoN # Previously analysed cohort
+├── samplesSet2_PoN # Currently analysed cohort
+├── samplesSet1andSet2_PoN # Joined cohort - this needs to be created
+├── Reference
+└── Somatic-ShortV
+```
          
-    If there are failed samples, a missing input file will be written and you will need to follow the next step. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
-   
-         qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
+Concatenate the config files of the previously sequenced samples (e.g. in `samplesSet1.config`) and newly sequenced samples (e.g. in `samplesSet2.config`) into a new config file (e.g. in `samplesSet1andSet2.config`) by:
+ 
+```
+sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
+```                      
+Create symbolic links for `sample.pon.vcf.gz`, `sample.pon.vcf.gz.tbi` into `../samplesSet1andSet2_PoN` using this script:
 
-5. Consolidate PoN across genomic intervals with multiple samples using GenomicsDBImport. To create a new PoN with previously processed sample data (e.g. when you want to combine previously processed samples with newly sequenced samples), follow steps 5a and 5b. Otherwise, just follow 5b. 
-
-      5a. Perform steps 1 - 4 for each cohort. If you have already processed data, you will only need to do this for the newly sequenced and aligned samples.
-         
-      Concatenate the config files of the previously sequenced samples (e.g. in `samplesSet1.config`) and newly sequenced samples (e.g. in `samplesSet2.config`) into a new config file (e.g. in `samplesSet1andSet2.config`) by:
-         
-         sh concat_configs.sh samplesSet1andSet2.config samplesSet1.config samplesSet2.config
-                      
-      Create a new PoN directory for `samplesSet1andSet2.config` by:
-
-         sh setup_pon_from_concat_config.sh samplesSet1andSet2.config
-            
-      5b. Consolidate PoN into interval databases across multiple samples by:
-      
-      Adjusting <project> and compute resource requests in `gatk4_pon_genomicsdbimport_run_parallel.pbs`, then submit your job by:
-   
-         qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
+```
+sh setup_pon_from_concat_config.sh samplesSet1andSet2.config
+```
+ 
+#### Consolidate PoN
+ 
+Create inputs:
+ 
+```
+sh gatk4_pon_genomicsdbimport_make_input.sh ../HRPCa_80.config
+```
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
+ 
+```   
+qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
+```
          
       Check the job when it's complete by: 
       
@@ -195,7 +245,7 @@ __Recommended step__: Back up `sample.pon.g.vcf.gz` and `sample.pon.g.vcf.gz.tbi
  
        qsub gatk4_cohort_pon_run_parallel.pbs
        
-7. Check that each task for `gatk4_cohort_pont_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
+7. Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
        nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
        cat nohup.out     
