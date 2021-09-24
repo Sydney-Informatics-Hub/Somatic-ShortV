@@ -14,10 +14,10 @@ The minimum requirements and high level directory structure resemble the followi
 ├── Final_bams
 ├── <cohort>.config
 ├── Reference
-└── Somatic-ShortV
+└── Somatic-ShortV 
 ```
 
-`Somatic-ShortV` will be your working directory, submit your jobs within this directory.
+__Output will be created at this directory level. Submit jobs within the `Somatic-ShortV` directory__
 
 #### 1. Clone this respository 
 
@@ -36,6 +36,8 @@ Use `module avail` to check if they are currently globally installed.
 If you have used [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM) pipeline, you can skip the remaining set up steps.
 
 #### 3. Prepare your `<cohort>.config` file
+
+The steps in this pipeline operate on samples present in your `<cohort>.config` file.
 
 * [See here](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM/blob/fastq-to-bam-v2/README.md#1-prepare-your-cohortconfig-file) for a full description
 * `<cohort>.config` is a TSV file with one row per unique sample, matching the format in the example below. Start header lines with `#`
@@ -69,7 +71,7 @@ The reference used includes __Human genome: hg38 + alternate contigs__
 
 # User guide
 
-The following will perform somatic short variant calling for all samples present in `/path/to/<cohort>.config`. Once you're set up (see the guide above), change into the `Somatic-ShortV` directory after cloning this repository. The scripts use relative paths and the `Somatic-ShortV` is your working directory. Adjust compute resources requested in the `.pbs` files using the guide provided in each of the parallel scripts. This will often be according to the number of samples in `/path/to/<cohort>.config`.
+The following will perform somatic short variant calling for all samples present in `<cohort>.config`. AFter setting up, __change into and submit jobs from the `Somatic-ShortV` directory__. 
 
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
 
@@ -80,14 +82,20 @@ __18/03/21__ Please check Log directory paths in PBS scripts
 
 ## Create Panel of Normals
 
-1. Start panel of normals (PoN) creation by running Mutect2 on each normal sample to create `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi`. The scripts below run Mutect2 in tumour only mode for the normal samples. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
+#### 1. Start creating a panel of normals (PoN)
 
-         sh gatk4_pon_make_input.sh /path/to/cohort.config
+The scripts below run Mutect2 in tumour only mode for the normal samples to create `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi`. Normal samples are ideally samples sequenced on the same platform and chemistry (library kit) as tumour samples. These are used to filter sequencing artefacts (polymerase slippage occurs pretty much at the same genomic loci for short read sequencing technologies) as well as germline variants. Read more about [PoN on GATK's website](https://gatk.broadinstitute.org/hc/en-us/articles/360035890631-Panel-of-Normals-PON-)
 
-   Adjust <project> and compute resource requests to suit your cohort, then:
+```
+sh gatk4_pon_make_input.sh /path/to/cohort.config
+```
 
-         qsub gatk4_pon_run_parallel.pbs
-  
+Adjust <project> and compute resource requests to suit your cohort, then:
+
+```
+qsub gatk4_pon_run_parallel.pbs
+```
+ 
 2. Check all .vcf, .vcf.idx and .vcf.stats files exist and are non-empty for step 1. Checks each log file for "SUCCESS" or "error" messages printed by GATK. If there are any missing output files or log files contain "error" or no "SUCCESS" message, the script writes inputs to re-run to an input file (`gatk_pon_missing.inputs`). If all checks pass, the script prints task duration and memory per interval, then archives log files. If you are not using the Reference available on the [Fastq-to-BAM](https://github.com/Sydney-Informatics-Hub/Fastq-to-BAM), adjust inputs in `gatk4_pon_check_sample_run_parallel.sh`.
  
          nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null &
