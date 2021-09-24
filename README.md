@@ -152,7 +152,7 @@ Create inputs (1 sample per task, an arguments file is created per sample). This
 sh gatk4_pon_gathervcfs_make_input.sh /path/to/cohort.config
 ```         
 
-Or with nohup (progress will be written to `nohup.out`:
+Or with nohup (output is written to `nohup.out`):
 
 ```
 nohup gatk4_pon_gathervcfs_make_input.sh /path/to/cohort.config 2>&1 &
