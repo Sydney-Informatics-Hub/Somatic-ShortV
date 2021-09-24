@@ -245,7 +245,7 @@ Check the job when it's complete by:
 nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
 ```
  
-Use `cat nohup.out` to see if there are any failed tasks.
+Check the `nohup.out` file.
  
 #### Re-running failed gatk4_pon_genomicsdbimport_missing.sh tasks
 
@@ -275,10 +275,13 @@ qsub gatk4_cohort_pon_run_parallel.pbs
 
 Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
-       nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
+```
+nohup sh gatk4_cohort_pon_check.sh ../samplesSet1andSet2.config 2> /dev/null &
        cat nohup.out     
 
-8. Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. First __edit the cohort=__ variable in the script, save, then submit your job:
+### 5. Gather intervals and sort into a single, multisample PoN
+ 
+Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. First __edit the cohort=__ variable in the script, save, then submit your job:
 
        qsub gatk4_cohort_pon_gather_sort.pbs
        
