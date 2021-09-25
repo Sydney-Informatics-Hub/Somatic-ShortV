@@ -101,7 +101,7 @@ __Adding new samples to a cohort for PoN__: If you have sequenced new samples be
   * Please create a config file containing the new samples only and process these from step 1. 
   * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
 
-## General tips
+## General structure
 
 Each step in the pipeline generally includes:
 
@@ -298,19 +298,27 @@ Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. T
 ```
 sh gatk4_cohort_pon_check.sh /path/to/cohort.config
 ```
- 
-
 
 ### 5. Gather intervals and sort into a single, multisample PoN
  
-Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. First __edit the cohort=__ variable in the script, save, then submit your job:
+Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. 
+ 
+Set the config variable and submit the job:
 
-       qsub gatk4_cohort_pon_gather_sort.pbs
-       
-This is the last step for creating a panel of normals and you should now have the following outputs for your `samples.config` file:
+```
+qsub gatk4_cohort_pon_gather_sort.pbs
+```
+ 
+#### Perform check
 
-* `./samples_cohort_PoN/samplesSet1andSet2.sorted.pon.vcf.gz`
-* `./samples_cohort_PoN/samplesSet1andSet2.sorted.pon.vcf.gz.tbi`
+```
+sh gatk4_cohort_pon_gather_sort_check.sh
+```
+ 
+This is the last step for a creating a panel of normals and you should now have the following outputs for your `<cohort>.config` file:
+
+* `../<cohort>_cohort_PoN/cohort.sorted.pon.vcf.gz`
+* `../<cohort>_cohort_PoN/cohort.sorted.pon.vcf.gz.tbi`
        
 ## Variant calling with Mutect2
 
