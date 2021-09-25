@@ -309,7 +309,7 @@ qsub gatk4_cohort_pon_missing_run_parallel.pbs
 
 ### 5. Gather intervals and sort into a single, multisample PoN
  
-Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. 
+Gather and sort interval cohort PoN to a single VCFs into a single, multisample sorted and indexed PoN VCF. This job performs these commands as a single task.
  
 Set the config variable and submit the job:
 
@@ -317,11 +317,13 @@ Set the config variable and submit the job:
 qsub gatk4_cohort_pon_gather_sort.pbs
 ```
  
-#### Perform check
+#### Perform checks
 
 ```
 sh gatk4_cohort_pon_gather_sort_check.sh
 ```
+ 
+Errors should be investigated before re-running `gatk4_cohort_pon_gather_sort.pbs`.
  
 This is the last step for a creating a panel of normals and you should now have the following outputs for your `<cohort>.config` file:
 
