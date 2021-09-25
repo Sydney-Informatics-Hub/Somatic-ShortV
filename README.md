@@ -66,7 +66,7 @@ The steps in this pipeline operate on samples present in your `<cohort>.config` 
 * `<cohort>.config` is a TSV file with one row per unique sample, matching the format in the example below. Start header lines with `#`
 * LabSampleID's are your in-house sample IDs. Input and output files are named with this ID.
   * Normal samples should be named `<patientID>-N`
-  * Matched tumour samples should be named `<patientID>-<tumourID>`. Multiple tumour samples are OK.
+  * Matched tumour samples should be named `<patientID>-T<tumourID>`. Multiple tumour samples are OK.
   * `<patientID>` is used to find normal and tumour samples belonging to a single patient
 
 The below is an example `<cohort>.config` with two patient samples. Patient 1 has 2 matched tumour samples.
@@ -285,7 +285,7 @@ Create inputs:
 sh gatk4_cohort_pon_make_input.sh /path/to/cohort.config
 ```
 
-Adjust <project> and compute resource requests in `gatk4_cohort_pon_run_parallel.pbs`, then submit your job by:
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
 
 ```
 qsub gatk4_cohort_pon_run_parallel.pbs
@@ -322,30 +322,47 @@ This is the last step for a creating a panel of normals and you should now have 
        
 ## Variant calling with Mutect2
 
-Once you have completed creating your panel of normals, you may begin calling somatic variants with Mutect2 in tumour-matched normal mode. Mutect2 outputs f1r2 files used in `ReadOrientationArtefactsWorkflow` and stats files for `MergeMutectStats`, both outputs are later used in `FilterMutectCalls`. A few things to note:
+Once you have completed creating your panel of normals, you may begin calling somatic variants with Mutect2 in tumour-matched normal mode. Variants are filtered downstream. Variants will be called for each unique tumour-normal pair (i.e. if you have 3 tumour samples matching 1 normal sample, 3 VCF files for each pair will be produced if LabSampleID's follow Set up guide)
 
-* Variants will be called for each unique tumour-normal pair (i.e. if you have 3 normal samples matching 1 tumour sample. 3 VCF files for each pair will be produced)
+1. Scatter Mutect2 tasks
 
-9. Create inputs to run Mutect2 for tumour-normal pairs for genomic intervals in parallel by:
+For each unique tumour-normal pair in `<cohort>.config`, write inputs for scattering Mutect2 over 3,201 for genomic intervals. One tasks processes the mitochondial chromosome, for those who wish to perform mitochondial analysis.
 
-       sh gatk4_mutect2_make_input.sh /path/to/cohort.config
-       
-   Adjust <project> and compute resource requests in `gatk4_mutect2_run_parallel.pbs`, then submit your job by:
+```
+sh gatk4_mutect2_make_input.sh /path/to/cohort.config
+```
  
-       qsub gatk4_mutect2_run_parallel.pbs
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
 
-10. Check that Mutect2 ran successfully in the previous step. This checks that the expected output files are preset (`.vcf.gz`, `.vcf.gz.tbi`, `.vcf.gz.stats`,`f1f2.interval.tar.gz` for each tumour normal pair). This also checks for the presence of SUCCESS and error messages in the log files. 
-   
-        nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null &
-        cat nohup.out
+``` 
+qsub gatk4_mutect2_run_parallel.pbs
+```
 
-     If there are tasks to re-run (check number of tasks to re-run using `wc -l Inputs/gatk4_mutect2_missing.inputs` or `cat nohup.out`), re-run the failed tasks. 
-   
-     Adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
+Outputs for each unique tumour normal pair (index is the interval id or chrM):
  
-        qsub gatk4_mutect2_missing_run_parallel.pbs
+* `<patient>-T<tumour>_<patient>-N<normalid>.unfiltered.<index>.vcf.gz`
+* `<patient>-T<tumour>_<patient>-N<normalid>.unfiltered.<index>.vcf.gz.tbi`
+* `<patient>-T<tumour>_<patient>-N<normalid>.unfiltered.<index>.vcf.gz.stats`
+* `<patient>-T<tumour>_<patient>-N<normalid>.f1r2.<index>.tar.gz`
+  
+#### Perform checks
 
-11. Gather the unfiltered Mutect2 interval VCFs per tumour normal pair. Create inputs by:
+The script below checks that the expected output files are preset. Log files are checked for "SUCCESS" or error messages.
+
+```
+nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null 1> ./Logs/gatk4_mutect2_check.txt &
+````
+Check output `./Logs/gatk4_mutect2_check.txt` or use `wc -l Inputs/gatk4_mutect2_missing.inputs` for the number of failed tasks. 
+
+#### Re-run failed tasks only
+
+If there are tasks to re-run, adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
+
+``` 
+qsub gatk4_mutect2_missing_run_parallel.pbs
+```
+
+ 11. Gather the unfiltered Mutect2 interval VCFs per tumour normal pair. Create inputs by:
 
         sh gatk4_mutect2_gathervcfs_make_input.sh /path/to/cohort.config
 
@@ -452,8 +469,7 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
 17. Calculate the fraction of reads coming from cross sample contamination using `CalculateContamination` using pileups tables from `GetPileupSummaries` as inputs. The resulting contamination table is used in `FilterMutectCalls`. Create inputs by:
 
         sh gatk4_calculatecontamination_make_input.sh /path/to/cohort.config
-        
-   
+    
 
 ## FilterMutectCalls   
 
