@@ -96,16 +96,24 @@ The reference used includes __Human genome: hg38 + alternate contigs__ and a lis
 
 This pipeline will perform [GATK4's Somatic Short Variant Discovery](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-) (SNVs and Indels) best practices workflows for all samples present in `<cohort>.config`. 
 
-__! After setting up, change into and submit jobs from the `Somatic-ShortV` directory__. 
-
 __Adding new samples to a cohort for PoN__: If you have sequenced new samples belonging to a cohort that was previously sequenced and wish to re-create PoN with all samples, you can skip some of the processing steps for the previously sequenced samples. If you would like to do this:
 
   * Please create a config file containing the new samples only and process these from step 1. 
   * Follow optional steps from step 5 onwards if you would like to consolidate the new samples with previously processed samples.
 
-__18/03/21__ Please check Log directory paths in PBS scripts
+## General tips
+
+Each step in the pipeline generally includes:
+
+* A script to create an input file, where 1 line of input = 1 scatter task
+* A "run_parallel.pbs" script, the job you submit to run "task.sh" for each input created
+* A checker script and if required, an additional script to re-submit failed jobs
+
+By default, compute resources are optimal for processing 40 normal (35X) and 40 matched tumour (70X) samples. See [benchmarking metrics](#-Benchmarking-metrics) for additional guidance with compute resource requests.
 
 ## Create the Panel of Normals
+
+__! Submit all jobs from the `Somatic-ShortV` directory__
 
 ### 1. Scatter and create PoN across genomic intervals
 
@@ -189,9 +197,12 @@ Check the number of tasks to re-run using `wc -l ./Inputs/gatk4_pon_gathervcfs_m
 ```   
 qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 ```
+
+Perform checks and re-run failed tasks until all tasks have completed successfully. 
+ 
 #### gatk4_pon_gathervcfs passes checks
 
-We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage
+We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage.
  
 ### 3. Consolidate samples with GenomicsDBImport
  
@@ -262,6 +273,7 @@ Check the `nohup.out` file.
 ```
 qsub gatk4_pon_genomicsdbimport_missing_run_parallel.pbs
 ```
+Perform check and re-run failed tasks until all tasks have completed successfully. 
  
 ### 4. Create PoN per genomic interval
 
@@ -284,10 +296,10 @@ qsub gatk4_cohort_pon_run_parallel.pbs
 Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. This script checks that there is a non-empty VCF and TBI file for all genomic intervals that the job operated on and that there were no error messages in the log files. The script runs collects duration and memory used per task or genomic interval and then cleans up by gzip tar archiving log files. Run:
 
 ```
-nohup sh gatk4_cohort_pon_check.sh /path/to/cohort.config 2> /dev/null &
+sh gatk4_cohort_pon_check.sh /path/to/cohort.config
 ```
  
-       cat nohup.out     
+
 
 ### 5. Gather intervals and sort into a single, multisample PoN
  
