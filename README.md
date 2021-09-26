@@ -470,7 +470,7 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
 
 Optionally, you can generate your own common biallelic variant resource.
  
-#### Optional: Create common biallelic variant resources
+### 0. Optional: Create common biallelic variant resources
  
 `gatk4_selectvariants.pbs` takes your public resource VCF, and selects common biallelic SNP variants (by default, those with an allele frequency of > 0.05).
   
