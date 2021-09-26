@@ -342,11 +342,14 @@ For each unique tumour-normal pair in `<cohort>.config`, write inputs for scatte
 sh gatk4_mutect2_make_input.sh /path/to/cohort.config
 ```
  
-Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort, then:
+Edit and run the script below to scatter task inputs for parallel processing. Adjust <project> and compute resource requests to suit your cohort. 
+ 
+ __Note__: We recommend setting the walltime limit low (scale compute to 2 - 4 normal nodes per pair, leaving walltime=02:00:00). Whilst we've implemented strategies to avoid tasks this situation, occassionally a spurious sample pair can have a task that "hangs" (happens about ~1 task/50 pairs). This causes idle CPUs at the tail end of the job. These spurious tasks can be found and re-run when checks are performed in a separate job. 
 
 ``` 
 qsub gatk4_mutect2_run_parallel.pbs
 ```
+
 
 Outputs for each unique tumour normal pair (index is the interval id or chrM):
  
@@ -357,14 +360,14 @@ Outputs for each unique tumour normal pair (index is the interval id or chrM):
   
 #### Perform checks
 
-The script below checks that the expected output files are preset. Log files are checked for "SUCCESS" or error messages.
+The script below checks that the expected output files are preset. Log files are checked for "SUCCESS" or error messages. The script takes ~30 seconds/40 tumour-normal pairs. We recommend using `nohup` if you have a large number of pairs.  
 
 ```
-nohup sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config 2> /dev/null 1> ./Logs/gatk4_mutect2_check.txt &
+sh gatk4_mutect2_check_pair_parallel.sh /path/to/cohort.config
 ````
-Check output `./Logs/gatk4_mutect2_check.txt` or use `wc -l Inputs/gatk4_mutect2_missing.inputs` for the number of failed tasks. 
+Check output or `Inputs/gatk4_mutect2_missing.inputs` for failed tasks. 
 
-#### Re-run failed tasks only
+#### Re-run failed tasks
 
 If there are tasks to re-run, adjust <project> and compute resource requests in `gatk4_mutect2_missing_run_parallel.pbs`, then submit your job by:
 
@@ -372,7 +375,7 @@ If there are tasks to re-run, adjust <project> and compute resource requests in 
 qsub gatk4_mutect2_missing_run_parallel.pbs
 ```
 
-### 2. Gather Mutect2 output
+### 2. Gather Mutect2 VCFs
 
 Gather the unfiltered Mutect2 interval outputs for each tumour normal pair. Create inputs by:
 
@@ -388,8 +391,8 @@ qsub gatk4_mutect2_gathervcfs_run_parallel.pbs
 
 For each tumour normal pair in your `cohort.config` file, you will now have:
 
-* `../Mutect2_interval_VCFs/TumourID_NormalID.unfiltered.vcf.gz`
-* `../Mutect2_interval_VCFs/TumourID_NormalID.unfiltered.vcf.gz.tbi`
+* `../Mutect2/<patient>-T<tumour>_<patient>-N<normalid>.unfiltered.vcf.gz`
+* `../Mutect2/<patient>-T<tumour>_<patient>-N<normalid>.unfiltered.vcf.gz.tbi`
 
 You will also have input files for the filtering steps, including:
 
