@@ -570,8 +570,8 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
  
 # Cite us to support us!
  
-The Somatic-ShortV pipeline can be cited as DOI: https://doi.org/10.48546/workflowhub.workflow.148.1
-
+Chew, T., Willet, C., Samaha, G., Menadue, B. J., Kobayashi, R., & Sadsad, R. (2021). Somatic-ShortV (Version 1.0) [Computer software]. https://doi.org/10.48546/workflowhub.workflow.148.1
+ 
 # Acknowledgements
 
 Acknowledgements (and co-authorship, where appropriate) are an important way for us to demonstrate the value we bring to your research. Your research outcomes are vital for ongoing funding of the Sydney Informatics Hub and national compute facilities.
