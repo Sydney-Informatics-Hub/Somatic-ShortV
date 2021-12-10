@@ -261,7 +261,7 @@ qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 Check the job when it's complete by: 
       
 ```
-nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null ./Logs/gatk4_pon_genomicsdbimport.log &
+nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null 1> ./Logs/gatk4_pon_genomicsdbimport.log &
 ```
  
 This takes a couple of minutes. Check the `./Logs/gatk4_pon_genomicsdbimport.log` file. If all tasks were successful, continue to [4. Create PoN per genomic interval](#4-create-pon-per-genomic-interval).
@@ -298,6 +298,8 @@ Check that each task for `gatk4_cohort_pon_run_parallel.pbs` ran successfully. T
 ```
 sh gatk4_cohort_pon_check.sh /path/to/cohort.config
 ```
+ 
+If there are no failed tasks, move on to [5. Gather intervals and sort into a single, multisample PoN](#5-gather-intervals-and-sort-into-a-single-multisample-pon).
  
 #### Re-run failed tasks
 
