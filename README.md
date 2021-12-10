@@ -208,7 +208,7 @@ We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long 
  
 ### 3. Consolidate samples with GenomicsDBImport
  
-The downstream analysis are performed across multiple samples and sample data is first consolidated with GenomicsDBImport. By default, this occurs at 3,200 genomic intervals. 
+The downstream analysis are performed across multiple samples and sample data is first consolidated with GenomicsDBImport. By default, this occurs at 3,200 genomic intervals. If you are processing a new cohort, start at [Consolidate PoN](#consolidate-pon).
 
 #### Including previously analysed samples
 
