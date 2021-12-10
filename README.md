@@ -192,7 +192,7 @@ Run this script on the login node (quick):
 sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
 ```         
 
-If all tasks are successful, we recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage and continuring to [3. Consolidate samples with GenomicsDBImport](#3-consolidate-samples-with-genomicsdbimport).
+If all tasks are successful, we recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage and continuing to [3. Consolidate samples with GenomicsDBImport](#3-consolidate-samples-with-genomicsdbimport).
  
 #### Re-running failed gatk4_pon_gathervcfs.sh tasks
  
@@ -261,10 +261,10 @@ qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 Check the job when it's complete by: 
       
 ```
-nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null &
+nohup sh gatk4_pon_genomicsdbimport_check.sh /path/to/cohort.config 2> /dev/null ./Logs/gatk4_pon_genomicsdbimport.log &
 ```
  
-Check the `nohup.out` file.
+This takes a couple of minutes. Check the `./Logs/gatk4_pon_genomicsdbimport.log` file. If all tasks were successful, continue to [4. Create PoN per genomic interval](#4-create-pon-per-genomic-interval).
  
 #### Re-run failed tasks
 
