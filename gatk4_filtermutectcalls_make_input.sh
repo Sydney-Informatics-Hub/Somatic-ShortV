@@ -57,7 +57,7 @@ while read -r sampleid labid seq_center library; do
         if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
                 #samples+=("${labid}")
                 patient=$(echo "${labid}" | perl -pe 's/(-B.?|-N.?)$//g')
-                patient_samples=( $(awk -v pattern="${patient}-" '$2 ~ pattern{print $2}' ${config}) )
+                patient_samples=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||' | sed 's|.final.bam||g'`)
                 #echo ${patient_sampples[@]}
                 if ((${#patient_samples[@]} == 2 )); then
                         pairs_found=$(( ${pairs_found}+1 ))

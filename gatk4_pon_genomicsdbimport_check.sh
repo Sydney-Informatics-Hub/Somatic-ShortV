@@ -38,46 +38,61 @@ INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_genomicsdbimport_missing.inputs
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
-scatterlist=${scatterdir}/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
 vcfdir=../${cohort}_PoN
 sample_map=${INPUTS}/${cohort}.sample_map
-outdir=./${cohort}_PoN_GenomicsDBImport
+outdir=../${cohort}_PoN_GenomicsDBImport
 logdir=./Logs/gatk4_pon_genomicsdbimport
 PERL_SCRIPT=gatk4_check_logs.pl
 perlfile=${logdir}/interval_duration_memory.txt
-nt=2 # Increase CPU as necessary
+num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 
-mkdir -p ${INPUTS}
-mkdir -p ${logdir}
-
-rm -rf ${inputfile}
-rm -rf ${perlfile}
+mkdir -p ${INPUTS} ${logdir}
+rm -rf ${inputfile} ${perlfile}
 
 # Run perl script to get duration
 echo "$(date): Checking ${logdir} for errors, obtaining duration and memory usage per task..."
 perl $PERL_SCRIPT "$logdir"
 
-# Check output file
+# Check perl output file (logs)
 while read -r interval duration memory; do
         if [[ $duration =~ NA || $memory =~ NA ]]
         then
+		echo "Please investigate ERROR for task: ${interval}"
                 redo+=("$interval")
         fi
 done < "$perlfile"
 
-if [[ ${#redo[@]}>1 ]]
+# Check output directory exists and is not empty
+for interval in $(seq -f "%04g" 0 $((${num_int}-1))); do
+	if [ -z "$(ls -A ${outdir}/${interval})" ]
+	then
+		echo "Please investigate ERROR for task: ${interval}"
+		redo+=("$interval")
+	fi
+done
+
+if [[ ${#redo[@]}>0 ]]
 then
         echo "$(date): There are ${#redo[@]} intervals that need to be re-run."
-        echo "$(date): Writing inputs to ${INPUTS}/gatk4_genomicsdbimport_missing.inputs"
+        echo "$(date): Writing inputs to ${inputfile}"
 
         for redo_interval in ${redo[@]};do
                 interval="${scatterdir}/${redo_interval}-scattered.interval_list"
-                echo "${ref},${cohort},${interval},${sample_map},${outdir},${logdir},${nt}" >> ${inputfile}
+                echo "${ref},${cohort},${interval},${sample_map},${outdir},${logdir}" >> ${inputfile}
         done
 else
-        echo "$(date): There are no intervals that need to be re-run. Tidying up..."
+        echo "$(date): There are no intervals that need to be re-run. Archiving logs..."
         cd ${logdir}
-        tar --remove-files \
-                -kczf genomicsdbimport_logs.tar.gz \
-                *.oe
+        tar -kczf pon_genomicsdbimport_logs.tar.gz \
+                *.log
+        retVal=$?
+	if [ $retVal -eq 0 ]; then
+                echo "$(date): Tar successful. Cleaning up..."
+                rm -rf *.log
+	fi
 fi

@@ -3,7 +3,7 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Usage:
+# Usage: qsub gatk4_pon_genomicsdbimport_run_parallel.pbs
 # Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
@@ -26,27 +26,37 @@
 #
 #########################################################
 
+#PBS -P er01
+#PBS -N pon_genomicsdbimport
+#PBS -l walltime=02:00:00,ncpus=96,mem=380GB,wd
+#PBS -q normal
+#PBS -W umask=022
+#PBS -l storage=XXX
+#PBS -o ./Logs/gatk4_pon_genomicsdbimport_missing.o
+#PBS -e ./Logs/gatk4_pon_genomicsdbimport_missing.e
+
 set -e
 
-sample=`echo $1 | cut -d ',' -f 1`
-args=`echo $1 | cut -d ',' -f 2`
-logdir=`echo $1 | cut -d ',' -f 3`
-partial=`echo $1 | cut -d ',' -f 4`
-chrM=`echo $1 | cut -d ',' -f 5`
-out=`echo $1 | cut -d ',' -f 6`
+NCPUS=1
 
-mkdir -p ${logdir}
-rm -rf ${logdir}/${sample}.log
+#########################################################
+# Do not edit below this line
+#########################################################
 
-# GatherVcfs requires intervals in order, so add chrM using MergeVcfs
-gatk GatherVcfs \
-        --arguments_file ${args} \
-        --MAX_RECORDS_IN_RAM 100000000 \
-        -O ${partial} >> ${logdir}/${sample}.log 2>&1
+module load openmpi/4.1.0
+module load nci-parallel/1.0.0a
+module load gatk/4.2.1.0
 
-# Now gather chrM using MergeVcfs which doesn't require a specific order (but can't take in thousands of intervals like GatherVcfs
-# Automatically sorts using VCF headers
-gatk MergeVcfs \
-        -I ${partial} \
-        -I ${chrM} \
-        -O ${out} >> ${logdir}/${sample}.log 2>&1
+INPUTS=./Inputs/gatk4_pon_genomicsdbimport_missing.inputs
+SCRIPT=./gatk4_pon_genomicsdbimport.sh
+
+M=$(( PBS_NCI_NCPUS_PER_NODE / NCPUS )) #tasks per node
+
+sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
+
+mpirun --np $((M * PBS_NCPUS / PBS_NCI_NCPUS_PER_NODE)) \
+        --map-by node:PE=${NCPUS} \
+        nci-parallel \
+        --verbose \
+        --input-file ${PBS_JOBFS}/input-file
+

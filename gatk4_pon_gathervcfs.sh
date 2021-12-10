@@ -34,9 +34,9 @@ logdir=`echo $1 | cut -d ',' -f 3`
 out=`echo $1 | cut -d ',' -f 4`
 
 mkdir -p ${logdir}
-rm -rf ${logdir}/${sample}.oe
+rm -rf ${out}* ${logdir}/${sample}.log
 
 gatk GatherVcfs \
         --arguments_file ${args} \
         --MAX_RECORDS_IN_RAM 1000000 \
-        -O ${out} >> ${logdir}/${sample}.oe 2>&1
+        -O ${out} >> ${logdir}/${sample}.log 2>&1

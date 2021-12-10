@@ -34,7 +34,7 @@ fi
 
 config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)
-outdir=./${cohort}_PoN
+outdir=../${cohort}_PoN
 logs=./Logs/gatk4_pon_gathervcfs
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_gathervcfs_missing.inputs
@@ -60,7 +60,7 @@ echo "$(date): Checking VCF and index files for ${#samples[@]} samples"
 i=0
 for sample in "${samples[@]}"
 do
-        logfile=${logs}/${sample}.oe
+        logfile=${logs}/${sample}.log
         err=$(grep ERROR $logfile | wc -l)
         if [ $err -gt 0 ]
         then
@@ -86,9 +86,13 @@ if [[ -s "$inputfile" ]]
 then
         echo $(date): There are $(wc -l $inputfile) tasks to re-run.
 else
-        echo $(date): GatherVCFs check complete. There are no tasks to re-run. Cleaning up...
-        for sample in "${samples[@]}"
-        do
-                rm -rf ${outdir}/${sample}
-        done
+        echo $(date): GatherVCFs check complete. There are no tasks to re-run. Archiving logs...
+        cd ${logs}
+        tar -kczf pon_gathervcfs_logs.tar.gz \
+                *.log
+        retVal=$?
+        if [ $retVal -eq 0 ]; then
+                echo "$(date): Tar successful. Cleaning up..."
+                rm -rf *.log
+        fi
 fi

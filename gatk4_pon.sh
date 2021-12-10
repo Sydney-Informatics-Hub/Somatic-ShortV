@@ -30,27 +30,22 @@ ref=`echo $1 | cut -d ',' -f 1`
 sample=`echo $1 | cut -d ',' -f 2`
 bam=`echo $1 | cut -d ',' -f 3`
 interval=`echo $1 | cut -d ',' -f 4`
-out=`echo $1 | cut -d ',' -f 5`
-nt=`echo $1 | cut -d ',' -f 6`
-logdir=`echo $1 | cut -d ',' -f 7`
+outdir=`echo $1 | cut -d ',' -f 5`
+logdir=`echo $1 | cut -d ',' -f 6`
 
-mkdir -p ${out}
-mkdir -p ${logdir}
+mkdir -p ${outdir} ${logdir}
 
 filename=${interval##*/}
 index=${filename%-scattered.interval_list}
 
-vcf=${out}/${sample}.pon.${index}.vcf
+vcf=${outdir}/${sample}.pon.${index}.vcf
 
-echo "$(date): Creating panel of normals using GATK4 Mutect2. Reference: ${ref}; Sample: ${sample}; Bam: ${bam}; Interval: ${filename}; VCF: ${vcf}; Threads: ${nt}; Logs: ${logdir}" > ${logdir}/${index}.oe 2>&1 
-
-gatk --java-options "-Xmx8g" \
+gatk --java-options "-Xmx8g -XX:ParallelGCThreads=$NCPUS -Djava.io.tmpdir=${PBS_JOBFS}" \
 	Mutect2 \
 	-R ${ref} \
 	-I ${bam} \
 	-L ${interval} \
 	--max-mnp-distance 0 \
 	-O ${vcf} \
-	--native-pair-hmm-threads ${nt} >>${logdir}/${index}.oe 2>&1 
+	--native-pair-hmm-threads $NCPUS >>${logdir}/${index}.log 2>&1 
 
-echo "$(date): Finished creating panel of normals, saving output to: ${vcf}" >> ${logdir}/${index}.oe 2>&1 

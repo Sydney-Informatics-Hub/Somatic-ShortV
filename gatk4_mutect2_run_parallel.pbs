@@ -3,7 +3,7 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Usage: qsub gatk4_mutec2_run_parallel.pbs
+# Usage: qsub gatk4_mutect2_run_parallel.pbs
 # Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
@@ -26,18 +26,18 @@
 #
 #########################################################
 
-#PBS -P <project>
+#PBS -P er01
 #PBS -N mutect2
-#PBS -l walltime=02:00:00,ncpus=4032,mem=16128GB,wd
+#PBS -l walltime=02:00:00,ncpus=11328,mem=45312GB,wd
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/<project>
-#PBS -o ../Logs/gatk4_mutect2.o
-#PBS -e ../Logs/gatk4_mutect2.e
+#PBS -l storage=XXX
+#PBS -o ./Logs/gatk4_mutect2.o
+#PBS -e ./Logs/gatk4_mutect2.e
 
 set -e
 
-INPUTS=./Inputs/gatk4_mutect2.inputs
+NCPUS=1
 
 #########################################################
 # Do not edit below this line
@@ -45,20 +45,16 @@ INPUTS=./Inputs/gatk4_mutect2.inputs
 
 module load openmpi/4.1.0
 module load nci-parallel/1.0.0a
-module load gatk/4.1.2.0
+module load gatk/4.2.1.0
 
-# NCPUs = CPUs per task
-NCPUS=1
-
-# SCRIPT
+INPUTS=./Inputs/gatk4_mutect2.inputs
 SCRIPT=./gatk4_mutect2.sh
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
-M=$(( CPN / NCPUS )) #tasks per node
+M=$(( PBS_NCI_NCPUS_PER_NODE / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
-mpirun --np $((M * PBS_NCPUS / CPN)) \
+mpirun --np $((M * PBS_NCPUS / PBS_NCI_NCPUS_PER_NODE)) \
         --map-by node:PE=${NCPUS} \
         nci-parallel \
         --verbose \

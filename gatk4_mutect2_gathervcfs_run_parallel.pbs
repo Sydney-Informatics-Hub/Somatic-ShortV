@@ -26,19 +26,18 @@
 #
 #########################################################
 
-#PBS -P <project>
+#PBS -P er01
 #PBS -N mutect2_gathervcfs
-#PBS -l walltime=00:30:00,ncpus=48,mem=192GB,wd
+#PBS -l walltime=00:20:00,ncpus=40,mem=190GB,wd
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/<project>
-#PBS -o ../Logs/mutect2_gathervcfs.o
-#PBS -e ../Logs/mutect2_gathervcfs.e
+#PBS -l storage=XXX
+#PBS -o ./Logs/gatk4_mutect2_gathervcfs.o
+#PBS -e ./Logs/gatk4_mutect2_gathervcfs.e
 
 set -e
 
-# SCRIPT
-INPUTS=./Inputs/gatk4_mutect2_gathervcfs.inputs
+NCPUS=1
 
 #########################################################
 # Do not edit below this line
@@ -46,21 +45,18 @@ INPUTS=./Inputs/gatk4_mutect2_gathervcfs.inputs
 
 module load openmpi/4.1.0
 module load nci-parallel/1.0.0a
-module load gatk/4.1.2.0
+module load gatk/4.2.1.0
 
-# NCPUs = CPUs per task
-NCPUS=1
-
-# SCRIPT
+INPUTS=./Inputs/gatk4_mutect2_gathervcfs.inputs
 SCRIPT=./gatk4_mutect2_gathervcfs.sh
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
-M=$(( CPN / NCPUS )) #tasks per node
+M=$(( PBS_NCI_NCPUS_PER_NODE / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
-mpirun --np $((M * PBS_NCPUS / CPN)) \
+mpirun --np $((M * PBS_NCPUS / PBS_NCI_NCPUS_PER_NODE)) \
         --map-by node:PE=${NCPUS} \
         nci-parallel \
         --verbose \
         --input-file ${PBS_JOBFS}/input-file
+

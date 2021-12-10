@@ -38,12 +38,15 @@ INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_genomicsdbimport.inputs
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
-vcfdir=./$cohort\_PoN
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
+vcfdir=../$cohort\_PoN
 sample_map=${INPUTS}/${cohort}.sample_map
-outdir=./$cohort\_PoN_GenomicsDBImport
+outdir=../$cohort\_PoN_GenomicsDBImport
 logs=./Logs/gatk4_pon_genomicsdbimport
-nt=1
 
 mkdir -p ${INPUTS}
 mkdir -p ${logs}
@@ -63,14 +66,14 @@ echo "$(date): Writing sample_map and input file for gatk4_pon_genomicsdbimport_
 
 for sample in "${samples[@]}"; do
         echo "$(date): Found ${sample}"
-        echo -e "${sample}      ${vcfdir}/${sample}.pon.vcf.gz" >> ${sample_map}
+        echo -e "${sample}	${vcfdir}/${sample}.pon.vcf.gz" >> ${sample_map}
 done
 
 # Loop through intervals in scatterlist file
 # Print to ${INPUTS}
 while IFS= read -r intfile; do
         interval="${scatterdir}/${intfile}"
-        echo "${ref},${cohort},${interval},${sample_map},${outdir},${logs},${nt}" >> ${inputfile}
+        echo "${ref},${cohort},${interval},${sample_map},${outdir},${logs}" >> ${inputfile}
 done < "${scatterlist}"
 
 num_tasks=`wc -l ${inputfile}`

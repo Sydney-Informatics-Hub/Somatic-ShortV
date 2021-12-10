@@ -35,30 +35,34 @@ scatterlist=`echo $1 | cut -d ',' -f 6`
 bamdir=`echo $1 | cut -d ',' -f 7`
 logdir=`echo $1 | cut -d ',' -f 8`
 cohort=$(basename "$config" | cut -d. -f 1)
-outdir=./$cohort\_PoN
-PERL_SCRIPT=get_interval_times_gatklog.pl
+outdir=../${cohort}_PoN/${sample}
+PERL_SCRIPT=gatk4_check_logs.pl
 num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 
 i=0
+
 echo "$(date): Checking ${sample}..."
 for interval in $(seq -f "%04g" 0 $((${num_int}-1))); do
-        logfile=${logdir}/${sample}/${interval}.oe
-        vcf=${outdir}/${sample}/${sample}.pon.${interval}.vcf
-        idx=${outdir}/${sample}/${sample}.pon.${interval}.vcf.idx
-        stats=${outdir}/${sample}/${sample}.pon.${interval}.vcf.stats
+        logfile=${logdir}/${sample}/${interval}.log
+        vcf=${outdir}/${sample}.pon.${interval}.vcf
+        idx=${outdir}/${sample}.pon.${interval}.vcf.idx
+        stats=${outdir}/${sample}.pon.${interval}.vcf.stats
+	bam=${bamdir}/${sample}.final.bam
         if ! [[ -s "${vcf}" &&  -s "${idx}" && -s "${stats}" ]]
         then
+		echo "$sample missing $vcf, $idx or $stats. Please investigate."
                 ((++i))
                 intfile=$(grep ${interval} ${scatterlist})
-                echo "${ref},${sample},${bam},${intfile},${out},${nt},${logdir}" >> ${inputfile}
+                echo "${ref},${sample},${bam},${scatterdir}/${intfile},${outdir},${logdir}/${sample}" >> ${inputfile}
         elif [[ -s "${logfile}" ]]
         then
                 success=$(grep -i success ${logfile})
                 error=$(grep -i error ${logfile})
                 if [[ ! ${success} && -z ${error} ]]; then
                         ((++i))
+			echo "$sample has ERROR in $log. Please investigate."
                         intfile=$(grep ${interval} ${scatterlist})
-                        echo "${ref},${sample},${bam},${intfile},${out},${nt},${logdir}" >> ${inputfile}
+                        echo "${ref},${sample},${bam},${scatterdir}/${intfile},${outdir},${logdir}/${sample}" >> ${inputfile}
                 fi
         else
                 "$(date): ${sample} has all output files but no log file for ${interval}"
@@ -73,5 +77,9 @@ else
         echo "$(date): Tarring ${sample} logs..."
         cd ${logdir}
         tar -czf ${sample}_logs.tar.gz ${sample}
-        rm -rf ${logdir}/${sample}
+	retVal=$?
+	if [ $retVal -eq 0 ]; then
+        	echo "$(date): Tar successful. Cleaning up..."
+        	rm -rf ${sample}
+	fi
 fi

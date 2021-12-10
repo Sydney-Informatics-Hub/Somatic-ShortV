@@ -32,7 +32,6 @@ interval=`echo $1 | cut -d ',' -f 3`
 sample_map=`echo $1 | cut -d ',' -f 4`
 outdir=`echo $1 | cut -d ',' -f 5`
 logdir=`echo $1 | cut -d ',' -f 6`
-nt=`echo $1 | cut -d ',' -f 7`
 
 filename=${interval##*/}
 index=${filename%-scattered.interval_list}
@@ -42,22 +41,14 @@ index=${filename%-scattered.interval_list}
 out=${outdir}/${index}
 tmp=${outdir}/tmp/${index}
 
-rm -rf ${out}
-rm -rf ${tmp}
+rm -rf ${out} ${tmp} 
+mkdir -p ${outdir} ${tmp} ${logdir}
 
-mkdir -p ${outdir}
-mkdir -p ${tmp}
-mkdir -p ${logdir}
-
-echo "$(date) : Start GATK 4 GenomicsDBImport. Reference: ${ref}; Cohort: ${cohort}; Interval: ${interval}; Sample map: ${sample_map}; Out: ${out}; Logs: ${logdir}; Threads: ${nt}" >${logdir}/${index}.oe 2>&1
-
-gatk --java-options "-Xmx64g" \
+gatk --java-options "-Xmx16g -DGATK_STACKTRACE_ON_USER_EXCEPTION=true" \
         GenomicsDBImport \
         --sample-name-map ${sample_map} \
         --overwrite-existing-genomicsdb-workspace \
         --genomicsdb-workspace-path ${out} \
         --tmp-dir ${tmp} \
-        --reader-threads ${nt} \
-        --intervals ${interval} >>${logdir}/${index}.oe 2>&1
-
-echo "$(date): Finished GATK 4 consolidate VCFs with GenomicsDBImport for: ${out}" >>${logdir}/${index}.oe 2>&1
+        --reader-threads ${NCPUS} \
+        --intervals ${interval} >${logdir}/${index}.log 2>&1

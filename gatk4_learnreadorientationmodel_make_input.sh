@@ -34,16 +34,20 @@ fi
 
 config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)
-vcfdir=./Interval_VCFs
+vcfdir=../Mutect2
+bamdir=../Final_bams
 logdir=./Logs/gatk4_learnreadorientationmodel
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
 num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_learnreadorientationmodel.inputs
 
-mkdir -p ${logdir}
-mkdir -p ${INPUTS}
+mkdir -p ${logdir} ${INPUTS}
 rm -rf ${inputfile}
 
 # Collect sample IDs from config file
@@ -53,7 +57,7 @@ while read -r sampleid labid seq_center library; do
         if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
                 #samples+=("${labid}")
                 patient=$(echo "${labid}" | perl -pe 's/(-B.?|-N.?)$//g')
-                patient_samples=( $(awk -v pattern="${patient}-" '$2 ~ pattern{print $2}' ${config}) )
+                patient_samples=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||' | sed 's|.final.bam||g'`)
                 if ((${#patient_samples[@]} == 2 )); then
                         pairs_found=$(( ${pairs_found}+1 ))
                         nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`

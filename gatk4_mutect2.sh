@@ -36,7 +36,6 @@ pon=`echo $1 | cut -d ',' -f 7`
 gnomad=`echo $1 | cut -d ',' -f 8`
 out=`echo $1 | cut -d ',' -f 9`
 logdir=`echo $1 | cut -d ',' -f 10`
-nt=`echo $1 | cut -d ',' -f 11`
 
 mkdir -p ${logdir}
 mkdir -p ${out}
@@ -52,13 +51,11 @@ fi
 gvcf=${out}/${tmid}_${nmid}.unfiltered.${index}.vcf.gz
 f1r2=${out}/${tmid}_${nmid}.f1r2.${index}.tar.gz
 
-echo "$(date) : Running GATK 4 Mutect2. Reference: ${ref}, Tumour: ${tmid}, Normal: ${nmid}, PoN: ${pon}, Interval: ${interval}, Output: ${gvcf}, Threads: ${nt}, Logs: ${logdir}, Germline resource: ${gnomad}" >> ${logdir}/${index}.oe 2>&1
-
-# Run chrM in  mitochondial modei
+# Run chrM in  mitochondial mode
 # PoN not included here
 if [[ ${index} =~ chrM ]]
 then
-        gatk --java-options "-Xmx8g" \
+        gatk --java-options "-Xmx3g -XX:ParallelGCThreads=$NCPUS -Djava.io.tmpdir=${PBS_JOBFS}" \
                 Mutect2 \
                 -R ${ref} \
                 -L chrM \
@@ -66,24 +63,23 @@ then
                 -I ${tmbam} \
                 -I ${nmbam} \
                 -normal ${nmid} \
-                --native-pair-hmm-threads ${nt} \
+		--panel-of-normals ${pon} \
+                --native-pair-hmm-threads ${NCPUS} \
                 --germline-resource ${gnomad} \
                 --f1r2-tar-gz ${f1r2} \
-                -O ${gvcf} >>${logdir}/${index}.oe 2>&1
-        echo "$(date) : Finished GATK 4 Mutect2 in mitochondrial mode for: ${gvcf}" >> ${logdir}/${index}.oe 2>&1
+                -O ${gvcf} >>${logdir}/${index}.log 2>&1
 else
-        gatk --java-options "-Xmx8g" \
+        gatk --java-options "-Xmx3g -XX:ParallelGCThreads=$NCPUS -Djava.io.tmpdir=${PBS_JOBFS}" \
                 Mutect2 \
                 -R ${ref} \
                 -I ${tmbam} \
                 -I ${nmbam} \
                 -normal ${nmid} \
-                --native-pair-hmm-threads ${nt} \
+                --native-pair-hmm-threads ${NCPUS} \
                 --panel-of-normals ${pon} \
                 --germline-resource ${gnomad} \
                 --f1r2-tar-gz ${f1r2} \
                 -XL chrM \
                 -L ${interval} \
-                -O ${gvcf} >>${logdir}/${index}.oe 2>&1
-        echo "$(date) : Finished GATK 4 Mutect2 for: ${gvcf}" >> ${logdir}/${index}.oe 2>&1
+                -O ${gvcf} >>${logdir}/${index}.log 2>&1
 fi

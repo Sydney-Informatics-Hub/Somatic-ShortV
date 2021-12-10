@@ -4,9 +4,6 @@
 use strict;
 use warnings;
 
-# Check genomicsDBImport log files
-# Collect: interval duration, check Runtime.totalMemory()
-
 my $logdir=$ARGV[0];
 my $out="$logdir/interval_duration_memory.txt";
 
@@ -18,7 +15,7 @@ print OUT "#Interval\tDuration\tMemory_Gb\n";
 
 for(my $i=0000; $i <3200; $i++){
 	my $interval=sprintf("%04d",$i);
-	my $file="$logdir\/$interval\.oe";
+	my $file="$logdir\/$interval\.log";
 	if(-s $file){
 		# Check for errors first, because errors will still print done and mem
 		my $errors =`grep -i ERROR $file`;
@@ -26,10 +23,10 @@ for(my $i=0000; $i <3200; $i++){
 			print OUT "$interval\tNA\tNA\n";
 		}
 		else{
-			my $timelog=`grep " done. Elapsed time:" $file`;
+			my $timelog=`tail -50 $file | grep " done. Elapsed time:"`;
 			$timelog=~ m/([0-9]+\.[0-9]+) minutes\.\n$/;
 			my $duration=$1;
-			my $memory=`grep "Runtime.totalMemory" $file`;
+			my $memory=`tail -50 $file | grep "Runtime.totalMemory"`;
 			$memory=~ m/([0-9]+)\n$/;
 			my $bytes=$1;
 			if($memory && $bytes){

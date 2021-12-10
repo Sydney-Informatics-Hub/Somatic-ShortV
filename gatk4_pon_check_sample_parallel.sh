@@ -33,14 +33,18 @@ then
 fi
 
 config=$1
-
-# Adjust if required
+if [ ! -f $config ]; then
+	echo "$config does not exist."
+fi
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
 bamdir=../Final_bams
 logdir=./Logs/gatk4_pon
-
 SCRIPT=./gatk4_pon_check_sample.sh
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon_missing.inputs
@@ -51,7 +55,7 @@ rm -rf ${inputfile}
 # Only collect IDs from normal samples (labids ending in -B)
 while read -r sampleid labid seq_center library; do
         if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
-                samples+=("${config},${labid},${inputfile},${ref},${scatterdir},${scatterlist},${bamdir},${logdir}")
+		samples+=("${config},${labid},${inputfile},${ref},${scatterdir},${scatterlist},${bamdir},${logdir}")
         fi
 done < "${config}"
 

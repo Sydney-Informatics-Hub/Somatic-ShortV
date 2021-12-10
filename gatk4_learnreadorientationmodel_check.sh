@@ -37,23 +37,27 @@ fi
 # INPUTS
 config=$1
 cohort=$(basename $config | cut -d'.' -f 1)
-vcfdir=./Interval_VCFs
+vcfdir=../Mutect2
+bamdir=../Final_bams
 logdir=./Logs/gatk4_learnreadorientationmodel
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
 num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_learnreadorientationmodel_missing.inputs
 
-mkdir -p ${logdir}
-mkdir -p ${INPUTS}
+mkdir -p ${logdir} ${INPUTS}
 rm -rf ${inputfile}
 
 # Get pairs that ran successfully
 # have SUCCESS in log file and no errors
 # Have expected output file: TN_NM_read-orientation-model.tar.gz
-success=(`grep SUCCESS ${logdir}/*oe | awk -F/ '{print $NF}' | cut -d '.' -f 1`)
-error=(`grep -i error ${logdir}/*oe | awk -F/ '{print $NF}' | cut -d '.' -f 1`)
+success=(`grep SUCCESS ${logdir}/*log | awk -F/ '{print $NF}' | cut -d '.' -f 1`)
+error=(`grep -i error ${logdir}/*log | awk -F/ '{print $NF}' | cut -d '.' -f 1`)
 
 # Collect sample IDs from config file
 # Only normal ids (labids ending in -B or -N)
@@ -63,9 +67,8 @@ successful_pairs=0
 while read -r sampleid labid seq_center library; do
         if [[ ! ${sampleid} =~ ^#.*$ && ${labid} =~ -B.?$ || ${labid} =~ -N.?$ ]]; then
                 patient=$(echo "${labid}" | perl -pe 's/(-B.?|-N.?)$//g')
-                patient_samples=( $(awk -v pattern="${patient}-" '$2 ~ pattern{print $2}' ${config}) )
-
-                if ((${#patient_samples[@]} == 2 )); then
+		patient_samples=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||' | sed 's|.final.bam||g'`)
+		if ((${#patient_samples[@]} == 2 )); then
                         pairs_found=$(( ${pairs_found}+1 ))
                         nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                         tmid=`printf '%s\n' ${patient_samples[@]} | grep -vP 'N.?$|B.?$'`
@@ -75,12 +78,13 @@ while read -r sampleid labid seq_center library; do
 
                         # Don't continue if pair matches any in ${success[@]}
                         if [[ " ${success[@]} " =~ " ${pair} " && -s ${out} ]]; then
-                                echo "$(date): SUCCESS in ${pair}.oe and ${out} non-empty"
+                                echo "$(date): SUCCESS in ${pair}.log and ${out} non-empty"
                                 successful_pairs=$(( ${successful_pairs}+1 ))
                         else
                                 if [[ " ${error[@]} " =~ " ${pair} " ]]; then
-                                        echo "$(date): ERROR in ${pair}.oe, you might want to investigate"
+                                        echo "$(date): ERROR in ${pair}.log"
                                 fi
+				echo "$(date): Check ${logdir}/${pair}.log and ${out}"
                                 echo "$(date): Writing input files for ${pair}"
                                 rm -rf ${args}
                                 missing_pairs=$(( ${missing_pairs}+1 ))
@@ -107,9 +111,9 @@ while read -r sampleid labid seq_center library; do
                                                 successful_pairs=$(( ${successful_pairs}+1 ))
                                         else
                                                 if [[ " ${error[@]} " =~ " ${pair} " ]]; then
-                                                        echo "$(date): ERROR in ${pair}.oe, you might want to investigate"
+                                                        echo "$(date): ERROR in ${pair}.log"
                                                 fi
-
+						echo "$(date): Check ${logdir}/${pair}.log and ${out}"
                                                 echo "$(date): Writing input files for ${pair}"
                                                 missing_pairs=$(( ${missing_pairs}+1 ))
                                                 rm -rf ${args}

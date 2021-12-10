@@ -9,8 +9,6 @@ use warnings;
 # this script gets duration per task using GATK logs
 # will tell us time for all intervals in 1 sample, but not task + duration 
 
-#my $logdir="/scratch/gq19/Batch1/Germline-ShortV-batch1-1/Logs/gatk4_hc/10651-B";
-
 my $logdir=$ARGV[0];
 
 my @files = <$logdir/*.oe>;

@@ -35,13 +35,10 @@ out=`echo $1 | cut -d ',' -f 4`
 logdir=`echo $1 | cut -d ',' -f 5`
 
 mkdir -p ${logdir}
-rm -rf ${logdir}/${sample}.oe
 
-echo "$(date): Running GetPileupSummaries for: Sample: ${sample}, BAM: ${bam}, Logs: ${logdir}, Out: ${out}" > ${logdir}/${sample}.oe 2>&1
-
-gatk --java-options "-Xmx54g -DGATK_STACKTRACE_ON_USER_EXCEPTION=true" \
+gatk --java-options "-Xmx54g -DGATK_STACKTRACE_ON_USER_EXCEPTION=true -XX:ParallelGCThreads=${NCPUS} -Djava.io.tmpdir=${PBS_JOBFS}" \
         GetPileupSummaries \
         -I ${bam} \
         -V ${common_biallelic} \
         -L ${common_biallelic} \
-        -O ${out} >> ${logdir}/${sample}.oe 2>&1
+        -O ${out} > ${logdir}/${sample}.log 2>&1

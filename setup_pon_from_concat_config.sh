@@ -28,7 +28,7 @@
 
 if [ -z "$1" ]
 then
-        echo "Please provide the path to your new cohort.config file that was created with concat_cohorts_one_config.sh"
+        echo "Please provide the path to your new cohort.config file that was created with concat_configs.sh"
         echo "e.g. sh setup_pon_new_config.sh ../new_cohort.config"
         exit
 fi
@@ -36,9 +36,10 @@ fi
 config=$1
 concat_cohort=$(basename $config | cut -d'.' -f 1)
 
-if [ -d "./${concat_cohort}_PoN" ]; then
-        if [ -z "$(ls -A ./${concat_cohort}_PoN)" ]; then
-                echo $(date): WARN ./${concat_cohort} exists and is not empty.
+# Create new PoN directory for combined cohort
+if [ -d "../${concat_cohort}_PoN" ]; then
+        if [ -z "$(ls -A ../${concat_cohort}_PoN)" ]; then
+                echo $(date): WARN ../${concat_cohort} exists and is not empty.
         fi
 fi
 
@@ -50,19 +51,20 @@ while read -r sampleid labid seq_center library; do
         fi
 done < "${config}"
 
-echo "$(date): Found ${#samples[@]} samples normal samples in $config"
+echo "$(date): Found ${#samples[@]} normal samples in $config"
 
-mkdir -p ./${concat_cohort}_PoN
-cd ./${concat_cohort}_PoN
+mkdir -p ../${concat_cohort}_PoN
+cd ../${concat_cohort}_PoN
 
 for nmid in "${samples[@]}"; do
-        nmid_vcf=$(find ${PWD}/.. -type f -name ${nmid}.pon.vcf.gz -print -quit)
-        nmid_tbi=$(find ${PWD}/.. -type f -name ${nmid}.pon.vcf.gz.tbi -print -quit)
+	echo $PWD $nmid
+	nmid_vcf=$(find ${PWD}/../*PoN -type f -name "*${nmid}.pon.vcf.gz")
+        nmid_tbi=$(find ${PWD}/../*PoN -type f -name "*${nmid}.pon.vcf.gz.tbi")
         if [[ $nmid_vcf && $nmid_tbi ]]; then
                 echo Found VCF and index files, creating symbolic links for $nmid_vcf and $nmid_tbi
-                ln -s $nmid_vcf .
-                ln -s $nmid_tbi .
+                cp -rs $nmid_vcf .
+                cp -rs $nmid_tbi .
         else
-                echo Could not find $nmid_vcf or $nmid_tbi
+                echo Could not find ${nmid}.pon.vcf.gz or ${nmid}.pon.vcf.gz.tbi
         fi
 done

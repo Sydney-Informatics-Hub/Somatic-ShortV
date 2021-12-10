@@ -41,14 +41,15 @@ logdir=`echo $1 | cut -d ',' -f 12`
 pair=${tmid}_${nmid}
 nmbam=${bamdir}/${nmid}.final.bam
 tmbam=${bamdir}/${tmid}.final.bam
-nt=1
 num_intervals=$(wc -l $scatterlist | cut -d' ' -f 1)
-PERL_SCRIPT=get_interval_times_gatklog.pl
+PERL_SCRIPT=gatk4_check_logs.pl
+
+touch $tmpfile 
 
 i=0
 echo "$(date): Checking tumour ${tmid} normal ${nmid} pair..."
 for interval in $(seq -f "%04g" 0 $((${num_intervals}-1))); do
-        logfile=${logdir}/${pair}/${interval}.oe
+        logfile=${logdir}/${pair}/${interval}.log
         vcf=${outdir}/${pair}.unfiltered.${interval}.vcf.gz
         tbi=${outdir}/${pair}.unfiltered.${interval}.vcf.gz.tbi
         stats=${outdir}/${pair}.unfiltered.${interval}.vcf.gz.stats
@@ -57,20 +58,20 @@ for interval in $(seq -f "%04g" 0 $((${num_intervals}-1))); do
         then
                 ((++i))
                 intfile=$(grep ${interval} ${scatterlist})
-                echo "${ref},${tmid},${tmbam},${nmid},${nmbam},${scatterdir}/${intfile},${pon},${germline},${outdir},${logdir}/${pair},${nt}" >> ${tmpfile}
+                echo "${ref},${tmid},${tmbam},${nmid},${nmbam},${scatterdir}/${intfile},${pon},${germline},${outdir},${logdir}/${pair}" >> ${tmpfile}
         else
-                success=$(grep -i success ${logfile})
-                error=$(grep -i error ${logfile})
+                success=$(tail -50 ${logfile} | grep -i success)
+                error=$(tail -50 ${logfile} | grep -i error)
                 if [[ ! ${success} && -z ${error} ]]; then
                         ((++i))
                         intfile=$(grep ${interval} ${scatterlist})
-                        echo "${ref},${tmid},${tmbam},${nmid},${nmbam},${scatterdir}/${intfile},${pon},${germline},${outdir},${logdir}/${pair},${nt}" >> ${tmpfile}
+                        echo "${ref},${tmid},${tmbam},${nmid},${nmbam},${scatterdir}/${intfile},${pon},${germline},${outdir},${logdir}/${pair}" >> ${tmpfile}
                 fi
         fi
 done
 
 # Check chrM
-chrM_logfile=${logdir}/${pair}/chrM.oe
+chrM_logfile=${logdir}/${pair}/chrM.log
 chrM_vcf=${outdir}/${pair}.unfiltered.chrM.vcf.gz
 chrM_tbi=${outdir}/${pair}.unfiltered.chrM.vcf.gz.tbi
 chrM_stats=${outdir}/${pair}.unfiltered.chrM.vcf.gz.stats
@@ -79,23 +80,23 @@ chrM_f1r2=${outdir}/${pair}.f1r2.chrM.tar.gz
 if ! [[ -s "${chrM_vcf}" &&  -s "${chrM_tbi}" && -s "${chrM_stats}" && -s "${chrM_f1r2}" && -s "${chrM_logfile}" ]]
 then
         ((++i))
-        echo "${ref},${tmid},${tmbam},${nmid},${nmbam},chrM,${pon},${germline},${outdir},${logdir}/${pair},${nt}" >> ${tmpfile}
+        echo "${ref},${tmid},${tmbam},${nmid},${nmbam},chrM,${pon},${germline},${outdir},${logdir}/${pair}" >> ${tmpfile}
 else
-        success=$(grep -i success ${chrM_logfile})
-        error=$(grep -i error ${chrM_logfile})
+        success=$(tail -50 ${chrM_logfile} | grep -i success)
+        error=$(tail -50 ${chrM_logfile} | grep -i error)
         if [[ ! ${success} && -z ${error} ]]; then
                 ((++i))
-                echo "${ref},${tmid},${tmbam},${nmid},${nmbam},chrM,${pon},${germline},${outdir},${logdir}/${pair},${nt}" >> ${tmpfile}
+                echo "${ref},${tmid},${tmbam},${nmid},${nmbam},chrM,${pon},${germline},${outdir},${logdir}/${pair}" >> ${tmpfile}
         fi
 fi
 
 if [[ ${i}>0 ]]; then
         echo "$(date): ${pair} has $i failed tasks."
 else
-        echo "$(date): ${pair} has $i failed tasks. Printing task duration and memory usage..."
-        perl ${PERL_SCRIPT} ${logdir}/${pair} > ${logdir}/${pair}/${pair}_task_duration_mem.txt
-        echo "$(date): Tarring ${pair} logs..."
+        #echo "$(date): ${pair} has $i failed tasks. Printing task duration and memory usage..."
+        #perl ${PERL_SCRIPT} ${logdir}/${pair} > ${logdir}/${pair}/${pair}_task_duration_mem.txt
+        echo "$(date): ${pair} passed checks. Tarring ${pair} logs..."
         cd ${logdir}
         tar -czf ${pair}_mutect2_logs.tar.gz ${pair}
-        rm -rf ${logdir}
+        #rm -rf ${logdir}
 fi

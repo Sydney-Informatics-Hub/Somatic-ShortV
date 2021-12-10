@@ -39,9 +39,13 @@ inputfile=${INPUTS}/gatk4_cohort_pon.inputs
 ref=../Reference/hs38DH.fasta
 germline=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
-gendbdir=./$cohort\_PoN_GenomicsDBImport
-outdir=./$cohort\_cohort_PoN
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
+gendbdir=../$cohort\_PoN_GenomicsDBImport
+outdir=../$cohort\_cohort_PoN
 logdir=./Logs/gatk4_cohort_pon
 
 rm -rf ${inputfile}

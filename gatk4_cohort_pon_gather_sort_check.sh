@@ -3,7 +3,7 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Usage:
+# Usage: sh gatk4_cohort_pon_gather_sort_check.sh
 # Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
@@ -26,27 +26,30 @@
 #
 #########################################################
 
-set -e
+if [ -z "$1" ]
+then
+        echo "Please provide the path to your cohort.config file, e.g. sh gatk4_cohort_pon_gather_sort_check.sh ../cohort.config"
+        exit
+fi
 
-sample=`echo $1 | cut -d ',' -f 1`
-args=`echo $1 | cut -d ',' -f 2`
-logdir=`echo $1 | cut -d ',' -f 3`
-partial=`echo $1 | cut -d ',' -f 4`
-chrM=`echo $1 | cut -d ',' -f 5`
-out=`echo $1 | cut -d ',' -f 6`
+config=$1
+cohort=$(basename "$config" | cut -d. -f 1)
+vcfdir=../$cohort\_cohort_PoN
+logdir=./Logs/gatk4_cohort_pon_gather_sort
+sorted=${vcfdir}/${cohort}.sorted.pon.vcf.gz
 
-mkdir -p ${logdir}
-rm -rf ${logdir}/${sample}.log
+# Check expected output files exist
+if ! [[ -s "${sorted}" &&  -s "${sorted}.tbi" ]]; then
+	echo "$(date): Missing output files. Please investigate"
+fi
 
-# GatherVcfs requires intervals in order, so add chrM using MergeVcfs
-gatk GatherVcfs \
-        --arguments_file ${args} \
-        --MAX_RECORDS_IN_RAM 100000000 \
-        -O ${partial} >> ${logdir}/${sample}.log 2>&1
+gather_err=$(grep -i ERROR ${logdir}/${cohort}_gathervcfs.log)
+sort_err=$(grep -i ERROR ${logdir}/${cohort}_sortvcf.log)
 
-# Now gather chrM using MergeVcfs which doesn't require a specific order (but can't take in thousands of intervals like GatherVcfs
-# Automatically sorts using VCF headers
-gatk MergeVcfs \
-        -I ${partial} \
-        -I ${chrM} \
-        -O ${out} >> ${logdir}/${sample}.log 2>&1
+if ! [ -z "${gather_err}" ]; then
+	echo "$(date): Error in ${logdir}/${cohort}_gathervcfs.log"
+elif ! [ -z "${sort_err}" ]; then
+	echo "$(date): Error in ${logdir}/${cohort}_sortvcf.log"
+else
+	echo "$(date): Checks passed"
+fi

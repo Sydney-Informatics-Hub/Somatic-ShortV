@@ -34,10 +34,8 @@ logdir=`echo $1 | cut -d ',' -f 3`
 out=`echo $1 | cut -d ',' -f 4`
 
 mkdir -p ${logdir}
-rm -rf ${logdir}/${pair}.oe
-
-echo "$(date): Merging interval stats files from Mutect2. TN pair: ${pair}, Arguments file: ${args}, Logs: ${logdir}, Out: ${out}" > ${logdir}/${pair}.oe 2>&1
+rm -rf ${logdir}/${pair}.log
 
 gatk MergeMutectStats \
         --arguments_file ${args} \
-        -O ${out} >> ${logdir}/${pair}.oe 2>&1
+        -O ${out} >> ${logdir}/${pair}.log 2>&1

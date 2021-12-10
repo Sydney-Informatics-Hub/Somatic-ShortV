@@ -36,19 +36,17 @@ fi
 
 # Select your common biallelic resource, or input your own resource:
 #common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz
-common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz
+common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38.vcf.gz
 
 config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)
 bamdir=../Final_bams
-outdir=./${cohort}_GetPileupSummaries
+outdir=../${cohort}_GetPileupSummaries
 logdir=./Logs/gatk4_getpileupsummaries
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_getpileupsummaries.inputs
 
-mkdir -p ${outdir}
-mkdir -p ${logdir}
-mkdir -p ${INPUTS}
+mkdir -p ${outdir} ${logdir} ${INPUTS}
 rm -rf ${inputfile}
 
 # Collect all sample IDs from config file

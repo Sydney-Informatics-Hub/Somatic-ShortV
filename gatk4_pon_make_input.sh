@@ -36,13 +36,16 @@ config=$1
 cohort=$(basename "$config" | cut -d. -f 1) 
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+	echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+	exit
+fi
 bamdir=../Final_bams
-outdir=./$cohort\_PoN
+outdir=../$cohort\_PoN
 logs=./Logs/gatk4_pon
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_pon.inputs
-nt=1
 
 mkdir -p ${INPUTS}
 mkdir -p ${logs}
@@ -68,11 +71,13 @@ while IFS= read -r intfile; do
 		bam=${bamdir}/${sample}.final.bam
 		logdir=${logs}/${sample}
 		interval="${scatterdir}/${intfile}"
-		echo "${ref},${sample},${bam},${interval},${out},${nt},${logdir}" >> ${inputfile}
+		echo "${ref},${sample},${bam},${interval},${out},${logdir}" >> ${inputfile}
 	done
 done < "${scatterlist}"
 
 num_inputs=`wc -l ${inputfile}`
-ncpus=$(( ${#samples[@]}*48*2 ))
-mem=$(( ${#samples[@]}*192*2 ))
-echo "$(date): Recommended compute to request in gatk4_pon_run_parallel.pbs: walltime=02:00:00,ncpus=${ncpus},mem=${mem}GB,wd"
+ncpus=$(( ${#samples[@]}*48*4 ))
+mem=$(( ${#samples[@]}*192*4 ))
+num_tasks=`wc -l $inputfile | cut -d' ' -f 1`
+echo "$(date): Number of tasks in $inputfile: $num_tasks"
+echo "$(date): Suggested compute to request in gatk4_pon_run_parallel.pbs: walltime=02:00:00,ncpus=${ncpus},mem=${mem}GB,wd"

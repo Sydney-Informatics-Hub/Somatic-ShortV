@@ -26,16 +26,19 @@
 #
 #########################################################
 
-#PBS -P <project>
-#PBS -N gatk4_pon
-#PBS -l walltime=02:00:00,ncpus=1152,mem=4608GB,wd
+#PBS -P er01
+#PBS -N pon
+#PBS -l walltime=02:00:00,ncpus=11328,mem=45312GB,wd 
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/<project>
-#PBS -o ../Logs/pon.o
-#PBS -e ../Logs/pon.e
+#PBS -l storage=XXX
+#PBS -o ./Logs/gatk4_pon.o
+#PBS -e ./Logs/gatk4_pon.e
 
-INPUTS=./Inputs/gatk4_pon.inputs
+set -e
+
+# CPUs per task
+NCPUS=1
 
 #########################################################
 # Do not edit below this line
@@ -43,22 +46,16 @@ INPUTS=./Inputs/gatk4_pon.inputs
 
 module load openmpi/4.1.0
 module load nci-parallel/1.0.0a
-module load gatk/4.1.2.0
+module load gatk/4.2.1.0
 
-set -e
-
-# NCPUs = CPUs per task
-NCPUS=1
-
-# SCRIPT
+INPUTS=./Inputs/gatk4_pon.inputs
 SCRIPT=./gatk4_pon.sh
 
-if [[ $PBS_QUEUE =~ bw-exec ]]; then CPN=28; else CPN=48; fi
-M=$(( CPN / NCPUS )) #tasks per node
+M=$(( PBS_NCI_NCPUS_PER_NODE / NCPUS )) #tasks per node
 
 sed "s|^|${SCRIPT} |" ${INPUTS} > ${PBS_JOBFS}/input-file
 
-mpirun --np $((M * PBS_NCPUS / CPN)) \
+mpirun --np $((M * PBS_NCPUS / PBS_NCI_NCPUS_PER_NODE)) \
         --map-by node:PE=${NCPUS} \
         nci-parallel \
         --verbose \

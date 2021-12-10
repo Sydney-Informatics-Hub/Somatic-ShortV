@@ -34,10 +34,14 @@ fi
 
 config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)
-vcfdir=./$cohort\_PoN
+vcfdir=../$cohort\_PoN
 logdir=./Logs/gatk4_pon_gathervcfs
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
 num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 
 INPUTS=./Inputs

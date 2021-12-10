@@ -28,17 +28,22 @@
 
 if [ -z "$1" ]
 then
-        echo "Please provide the path to your cohort.config file, e.g. sh gatk4_mutect2_make_input.sh ../cohort.config"
+        echo "Please provide the path to your cohort.config file, e.g. sh gatk4_mutect2_check_pair.sh ../cohort.config"
         exit
 fi
 
 # INPUTS
 config=$1
 cohort=$(basename $config | cut -d'.' -f 1)
+mt2dir=../Mutect2
 ref=../Reference/hs38DH.fasta
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
-pon=./$cohort\_cohort_PoN/$cohort.sorted.pon.vcf.gz
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
+pon=../$cohort\_cohort_PoN/$cohort.sorted.pon.vcf.gz
 germline=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
 logdir=./Logs/gatk4_mutect2
 INPUTS=./Inputs
@@ -61,22 +66,24 @@ done < "${config}"
 for nmid in "${samples[@]}"; do
         # Find any matching tumour bams using normal id without -N or -B
         patient=$(echo "${nmid}" | perl -pe 's/(-B.?|-N.?)$//g')
-        patient_samples=( $(awk -v pattern="${patient}-" '$2 ~ pattern{print $2}' ${config}) )
+	patient_samples=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||' | sed 's|.final.bam||g'`)
         if (( ${#patient_samples[@]} == 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 tmid=`printf '%s\n' ${patient_samples[@]} | grep -vP 'N.?$|B.?$'`
-                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
-                tmp+=("$tmpfile")
-                outdir=./Interval_VCFs/${tmid}_${nmid}
+                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs.tmp
+                rm -rf $tmpfile
+		tmp+=("$tmpfile")
+                outdir=${mt2dir}/${tmid}_${nmid}
                 inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir},${logdir}")
         elif (( ${#patient_samples[@]} > 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 for sample in "${patient_samples[@]}"; do
                         if ! [[ ${sample} =~ -N.?$ || ${sample} =~ -B.?$ ]]; then
                                 tmid=${sample}
-                                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
-                                tmp+=("$tmpfile")
-                                outdir=./Interval_VCFs/${tmid}_${nmid}
+                                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs.tmp
+                                rm -rf $tmpfile
+				tmp+=("$tmpfile")
+                                outdir=${mt2dir}/${tmid}_${nmid}
                                 inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir},${logdir}")
                         fi
                 done
@@ -87,12 +94,14 @@ echo "$(date): Checking .vcf.gz, .vcf.gz.tbi, .vcf.gz.stats, f1r2 files for ${#i
 
 echo "${inputs[@]}" | xargs --max-args 1 --max-procs 48 ${SCRIPT}
 
+for tmp in "${tmp[@]}"; do
+        if [[ -s $tmp ]]; then
+		cat $tmp >> $inputfile
+	fi
+	rm -rf ${tmp}
+done
+
 if [[ -s ${inputfile} ]]; then
-        paste -d'\n' "${tmp[@]}" > ${inputfile}
-        echo "$(date): Removing temporary files..."
-        for tmp in "${tmp[@]}"; do
-                rm -rf ${tmp}
-        done
         num_inputs=`wc -l ${inputfile}`
         echo "$(date): There are ${num_inputs} tasks to run for gatk4_mutect2_missing_run_parallel.pbs"
 else

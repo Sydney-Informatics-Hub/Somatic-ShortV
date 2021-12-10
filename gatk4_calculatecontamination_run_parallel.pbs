@@ -36,7 +36,7 @@
 #PBS -l walltime=00:30:00,ncpus=48,mem=192GB,wd
 #PBS -q normal
 #PBS -W umask=022
-#PBS -l storage=scratch/er01+scratch/hm82+scratch/oj47+scratch/public
+#PBS -l storage=XXX
 #PBS -o ./Logs/gatk4_calculatecontamination/calculatecontamination.o
 #PBS -e ./Logs/gatk4_calculatecontamination/calculatecontamination.e
 
@@ -44,7 +44,7 @@ set -e
 
 module load openmpi/4.1.0
 module load nci-parallel/1.0.0a
-module load gatk/4.1.2.0
+module load gatk/4.2.1.0
 
 # SCRIPT
 SCRIPT=./gatk4_calculatecontamination.sh

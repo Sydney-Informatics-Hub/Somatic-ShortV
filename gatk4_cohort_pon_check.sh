@@ -39,21 +39,20 @@ inputfile=${INPUTS}/gatk4_cohort_pon_missing.inputs
 ref=../Reference/hs38DH.fasta
 gnomad=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
 scatterdir=../Reference/ShortV_intervals
-scatterlist=$scatterdir/3200_ordered_exclusions.list
-gendbdir=./$cohort\_PoN_GenomicsDBImport
-outdir=./$cohort\_cohort_PoN
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
+gendbdir=../$cohort\_PoN_GenomicsDBImport
+outdir=../$cohort\_cohort_PoN
 logdir=./Logs/gatk4_cohort_pon
 PERL_SCRIPT=./gatk4_check_logs.pl
 perlfile=${logdir}/interval_duration_memory.txt
 num_int=`wc -l ${scatterlist} | cut -d' ' -f 1`
 
-# Increase CPU as necessary
-
-mkdir -p ${INPUTS}
-mkdir -p ${logdir}
-
-rm -rf ${inputfile}
-rm -rf ${perlfile}
+mkdir -p ${INPUTS} ${logdir}
+rm -rf ${inputfile} ${perlfile}
 
 # Check each interval vcf and tbi file exists and is not empty
 for index in $(seq -f "%04g" 0 $((${num_int}-1))); do
@@ -64,7 +63,7 @@ for index in $(seq -f "%04g" 0 $((${num_int}-1))); do
                 redo+=("$index")
         fi
 done
-echo $(date): "${#redo[@]}" tasks had missing or empty VCF or TBI files, wrote to $inputfile.
+echo $(date): "${#redo[@]}" tasks had missing or empty cohort.interval.pon.vcf.gz or cohort.interval.pon.vcf.gz.tbi files. Checking log files...
 
 # Check log files. Run perl script to get duration
 echo "$(date): Checking log files for errors, obtaining duration and memory usage per task..."
@@ -81,7 +80,7 @@ while read -r interval duration memory; do
         fi
 done < "$perlfile"
 
-if [[ ${#redo[@]}>1 ]]
+if [[ ${#redo[@]}>0 ]]
 then
 
         echo "$(date): There are ${#redo[@]} intervals that need to be re-run."
@@ -94,7 +93,11 @@ then
 else
         echo "$(date): There are no intervals that need to be re-run. Tidying up..."
         cd ${logdir}
-        tar --remove-files \
-        -kczf cohort_pon_logs.tar.gz \
-        *.oe
+        tar -kczf cohort_pon_logs.tar.gz \
+	        *.log
+	retVal=$?
+        if [ $retVal -eq 0 ]; then
+                echo "$(date): Tar successful. Cleaning up..."
+                rm -rf *log
+	fi
 fi

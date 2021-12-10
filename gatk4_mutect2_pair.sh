@@ -1,4 +1,4 @@
-#!/bin/bash
+#! /bin/bash
 
 #########################################################
 #
@@ -28,25 +28,28 @@
 
 set -e
 
-sample=`echo $1 | cut -d ',' -f 1`
-args=`echo $1 | cut -d ',' -f 2`
-logdir=`echo $1 | cut -d ',' -f 3`
-partial=`echo $1 | cut -d ',' -f 4`
-chrM=`echo $1 | cut -d ',' -f 5`
-out=`echo $1 | cut -d ',' -f 6`
+cohort=`echo $1 | cut -d ',' -f 1`
+tmid=`echo $1 | cut -d ',' -f 2`
+nmid=`echo $1 | cut -d ',' -f 3`
+ref=`echo $1 | cut -d ',' -f 4`
+pon=`echo $1 | cut -d ',' -f 5`
+germline=`echo $1 | cut -d ',' -f 6`
+outdir=`echo $1 | cut -d ',' -f 7`
+tmpfile=`echo $1 | cut -d ',' -f 8`
+scatterlist=`echo $1 | cut -d ',' -f 9`
+bamdir=`echo $1 | cut -d ',' -f 10`
+scatterdir=`echo $1 | cut -d ',' -f 11`
+nmbam=$bamdir/${nmid}.final.bam
+tmbam=${bamdir}/${tmid}.final.bam
+outdir=../Mutect2/${tmid}_${nmid}
+logs=./Logs/gatk4_mutect2/${tmid}_${nmid}
 
-mkdir -p ${logdir}
-rm -rf ${logdir}/${sample}.log
+mkdir -p ${outdir} ${logs}
+rm -rf ${tmpfile}
 
-# GatherVcfs requires intervals in order, so add chrM using MergeVcfs
-gatk GatherVcfs \
-        --arguments_file ${args} \
-        --MAX_RECORDS_IN_RAM 100000000 \
-        -O ${partial} >> ${logdir}/${sample}.log 2>&1
+while IFS= read -r intfile; do
+        interval="${scatterdir}/${intfile}"
+        echo "${ref},${tmid},${tmbam},${nmid},${nmbam},${interval},${pon},${germline},${outdir},${logs}" >> ${tmpfile}
+done < "${scatterlist}"
 
-# Now gather chrM using MergeVcfs which doesn't require a specific order (but can't take in thousands of intervals like GatherVcfs
-# Automatically sorts using VCF headers
-gatk MergeVcfs \
-        -I ${partial} \
-        -I ${chrM} \
-        -O ${out} >> ${logdir}/${sample}.log 2>&1
+echo "${ref},${tmid},${tmbam},${nmid},${nmbam},chrM,${pon},${germline},${outdir},${logs}" >> ${tmpfile}

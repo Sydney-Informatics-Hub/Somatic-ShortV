@@ -26,7 +26,7 @@
 #
 #########################################################
 
-# No option to set numnber of threads
+# No option to set threads
 
 ref=`echo $1 | cut -d ',' -f 1`
 cohort=`echo $1 | cut -d ',' -f 2`
@@ -36,26 +36,18 @@ interval=`echo $1 | cut -d ',' -f 5`
 outdir=`echo $1 | cut -d ',' -f 6`
 logdir=`echo $1 | cut -d ',' -f 7`
 
-mkdir -p ${outdir}
-mkdir -p ${logdir}
-
 filename=${interval##*/}
 index=${filename%-scattered.interval_list}
-
 out=${outdir}/${cohort}.${index}.pon.vcf.gz
 tmp=${outdir}/tmp/${index}
 
-mkdir -p ${outdir}
-mkdir -p ${tmp}
+rm -rf ${out} ${tmp}
+mkdir -p ${outdir} ${logdir} ${tmp}
 
-echo "$(date): Running CreateSomaticPanelOfNormals with gatk4. Reference: ${ref}; Resource: ${gnomad}; Interval: ${filename}; Out: ${out};  Logs: ${logdir}" > ${logdir}/${index}.oe 2>&1
-
-gatk --java-options "-Xmx8g" \
+gatk --java-options "-Xmx8g -XX:ParallelGCThreads=$NCPUS -Djava.io.tmpdir=${PBS_JOBFS}" \
         CreateSomaticPanelOfNormals \
         -R ${ref} \
         --germline-resource ${gnomad} \
         -V gendb://${gendbdir}/${index} \
         --tmp-dir ${tmp} \
-        -O ${out} >>${logdir}/${index}.oe 2>&1
-
-echo "$(date): Finished CreateSomaticPanelOfNormals, saving output to: ${out}" >> ${logdir}/${index}.oe 2>&1
+        -O ${out} >${logdir}/${index}.log 2>&1

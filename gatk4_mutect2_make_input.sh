@@ -3,7 +3,7 @@
 #########################################################
 #
 # Platform: NCI Gadi HPC
-# Usage: qsub gatk4_hc_run_parallel.pbs
+# Usage: sh gatk4_mutect2_make_input.sh
 # Version: 1.0
 #
 # For more details see: https://github.com/Sydney-Informatics-Hub/Somatic-ShortV
@@ -37,20 +37,24 @@ fi
 # INPUTS
 config=$1
 cohort=$(basename $config | cut -d'.' -f 1)
-outdir=./Interval_VCFs
+outdir=../Mutect2
 logdir=./Logs/gatk4_mutect2
 bamdir=../Final_bams
+ref=../Reference/hs38DH.fasta
+scatterdir=../Reference/ShortV_intervals
+scatterlist=$(ls $scatterdir/*.list)
+if [[ ${#scatterlist[@]} > 1 ]]; then
+        echo "$(date): ERROR - more than one scatter list file found: ${scatterlist[@]}"
+        exit
+fi
+pon=../$cohort\_cohort_PoN/$cohort.sorted.pon.vcf.gz
+germline=../Reference/broad-references/ftp/Mutect2/af-only-gnomad.hg38.vcf.gz
 INPUTS=./Inputs
 inputfile=${INPUTS}/gatk4_mutect2.inputs
-SCRIPT=./gatk4_mutect2_pair_make_input.sh
+SCRIPT=./gatk4_mutect2_pair.sh
 
-mkdir -p ${logdir}
-mkdir -p ${outdir}
-mkdir -p ${INPUTS}
-
+mkdir -p ${logdir} ${outdir} ${INPUTS}
 rm -rf ${inputfile}
-
-echo "$(date): Writing inputs for gatk4_mutect2_run_parallel.pbs"
 
 # Collect normal sample IDs from cohort.config
 while read -r sampleid labid seq_center library; do
@@ -63,7 +67,7 @@ done < "${config}"
 tasks=0
 for nmid in "${samples[@]}"; do
         patient=$(echo "${nmid}" | perl -pe 's/(-B.?|-N.?)$//g')
-        all_bams=(`find ${bamdir} -name ${patient}-*.final.bam -execdir echo {} ';' | sed 's|^./||'`)
+        all_bams=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||'`)
         #echo $patient has ${#all_bams[@]} bams: "${all_bams[@]}"
         if (( ${#all_bams[@]} == 1 )); then
                 echo ${patient} has 1 bam: "${all_bams[@]}". Mutect2 for tumour-normal mode will not be performed.
@@ -81,30 +85,32 @@ echo "$(date): There are $tasks tumour normal pairs. Writing 3,201 input lines t
 
 # Write gatk4_mutect2.inputs file for each tumour matching the normal sample
 # This will find bams matching the normal id with anything other than -B or -N appended to the name
-# Not all normals have a matching tumour sample - skip these samplesi
+# Not all normals have a matching tumour sample - skip these samples
 # Each line of input is for one sample and 3,201 intervals. One of the intervals=chrM.
 for nmid in "${samples[@]}"; do
         # Find any matching tumour bams using normal id without -N or -B
         patient=$(echo "${nmid}" | perl -pe 's/(-B.?|-N.?)$//g')
-        patient_samples=( $(awk -v pattern="${patient}-" '$2 ~ pattern{print $2}' ${config}) )
-        if (( ${#patient_samples[@]} == 2 )); then
+        patient_samples=(`find ${bamdir} -name "${patient}-[B|N|T|M|P]*.final.bam" -execdir echo {} ';' | sed 's|^./||' | sed 's|.final.bam||g'`)
+	if (( ${#patient_samples[@]} == 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 tmid=`printf '%s\n' ${patient_samples[@]} | grep -vP 'N.?$|B.?$'`
-                tmp+=("${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs")
-                inputs+=("${cohort},${tmid},${nmid}")
+		tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
+                tmp+=("${tmpfile}")
+                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
         elif (( ${#patient_samples[@]} > 2 )); then
                 nmid=`printf '%s\n' ${patient_samples[@]} | grep -P 'N.?$|B.?$'`
                 for sample in "${patient_samples[@]}"; do
                         if ! [[ ${sample} =~ -N.?$ || ${sample} =~ -B.?$ ]]; then
                                 tmid=${sample}
-                                inputs+=("${cohort},${tmid},${nmid}")
-                                tmp+=("${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs")
+		                tmpfile=${INPUTS}/gatk4_mutect2_${tmid}_${nmid}.inputs
+		                tmp+=("${tmpfile}")
+                                inputs+=("${cohort},${tmid},${nmid},${ref},${pon},${germline},${outdir},${tmpfile},${scatterlist},${bamdir},${scatterdir}")
                         fi
                 done
         fi
 done
 
-echo "${inputs[@]}" | xargs --max-args 1 --max-procs 20 ${SCRIPT}
+echo "${inputs[@]}" | xargs --max-args 1 --max-procs 40 ${SCRIPT}
 
 echo "$(date): Wrote inputs for ${#inputs[@]} tumour-normal pairs. Interleaving input files to retain interval order"
 
@@ -116,4 +122,10 @@ for tmp in "${tmp[@]}"; do
         rm -rf ${tmp}
 done
 
-echo "$(date): Done!"
+num_inputs=`wc -l ${inputfile}`
+ncpus=$(( ${#samples[@]}*48*4 ))
+mem=$(( ${#samples[@]}*192*4 ))
+num_tasks=`wc -l $inputfile | cut -d' ' -f 1`
+echo "$(date): Number of tasks in $inputfile: $num_tasks"
+echo "$(date): Suggested compute to request in gatk4_mutect2_run_parallel.pbs: walltime=02:00:00,ncpus=${ncpus},mem=${mem}GB,wd"
+
