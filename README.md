@@ -144,7 +144,7 @@ Replace  `/path/to/cohort.config` with your `cohort.config` file and run:
 nohup sh gatk4_pon_check_sample_parallel.sh /path/to/cohort.config 2> /dev/null 1> ./Logs/gatk4_pon_check.log &
 ```
  
-Check the output by `cat ./Logs/gatk_pon_check.log` to see if the job was successful. 
+Check the output by `cat ./Logs/gatk_pon_check.log` to see if the job was successful. If there are no failed tasks, move to [2. Gather interval VCFs into sample level VCFs](#2.-gather-interval-vcfs-into-sample-level-vcfs)
  
 #### Re-running failed gatk4_pon.sh tasks
  
