@@ -192,6 +192,8 @@ Run this script on the login node (quick):
 sh gatk4_pon_gathervcfs_check.sh /path/to/cohort.config
 ```         
 
+If all tasks are successful, we recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage and continuring to [3. Consolidate samples with GenomicsDBImport](#3-consolidate-samples-with-genomicsdbimport).
+ 
 #### Re-running failed gatk4_pon_gathervcfs.sh tasks
  
 Check the number of tasks to re-run using `wc -l ./Inputs/gatk4_pon_gathervcfs_missing.inputs`. Adjust <project> and compute resource requests in `gatk4_pon_gathervcfs_missing_run_parallel.pbs` then run it:
@@ -201,10 +203,6 @@ qsub gatk4_pon_gathervcfs_missing_run_parallel.pbs
 ```
 
 Perform checks and re-run failed tasks until all tasks have completed successfully. 
- 
-#### gatk4_pon_gathervcfs passes checks
-
-We recommend backing up `sample.pon.vcf.gz` and `sample.pon.vcf.gz.tbi` to long term storage.
  
 ### 3. Consolidate samples with GenomicsDBImport
  
