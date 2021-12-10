@@ -66,7 +66,7 @@ The steps in this pipeline operate on samples present in your `<cohort>.config` 
 * `<cohort>.config` is a TSV file with one row per unique sample, matching the format in the example below. Start header lines with `#`
 * LabSampleID's are your in-house sample IDs. Input and output files are named with this ID.
   * Normal samples should be named `<patientID>-N<normalID>`
-  * Matched tumour samples should be named `<patientID>-T<tumourID>`. Multiple tumour samples are OK.
+  * Matched tumour samples should be named `<patientID>-T<tumourID>`. Multiple tumour samples are OK. Only `<patientID>-T<tumourID>`, `<patientID>-M<tumourID>`, `<patientID>-P<tumourID>` extensions are recognised.
   * `<patientID>` is used to find normal and tumour samples belonging to a single patient
 
 The below is an example `<cohort>.config` with two patient samples. Patient 1 has 2 matched tumour samples.
