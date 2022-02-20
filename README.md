@@ -567,7 +567,7 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
 | gatk4_pon_genomicsdbimport_48   | 48             | 48        | 1.46TB        | 314.08GB | 21:27:48   | 1287.8       | 10:00:00     | 0:30:33       | 30.55         | 500.0MB   | 8.95MB     | 0.88       | 73.32                    |
 | gatk4_pon_genomicsdbimport_96   | 96             | 96        | 2.93TB        | 602.88GB | 21:48:05   | 1308.08      | 10:00:00     | 0:18:14       | 18.23         | 1000.0MB  | 8.95MB     | 0.75       | 87.52                    |
 
-\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. I recommend NOT using gnoMAD variants as a common biallelic resource as it requires extensive benchmarking to overcome Java "OutOfMemory" errors, specific to your sample and sample coverage. 
+\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. I recommend NOT using gnomAD variants as a common biallelic resource as it requires extensive benchmarking to overcome Java "OutOfMemory" errors, specific to your sample and sample coverage. 
  
 # Cite us to support us!
  
