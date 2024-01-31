@@ -565,7 +565,7 @@ As usual, make the inputs, providing the filepath of your samples config file as
 bash gatk4_getpileupsummaries_byInterval_make_input.sh <config-filepath>
 ```
 
-The created inputs file should be 3 X N, where N is the number of samples. Three 'chunks' of intervals are run per sample rather than scattering all 18 intervals - please see justification above. The default walltime for the GetPileupSummaries job is 3 hours per job (where one job is one chunk of intervals for one sample). This is sufficient for a high-coverage BAM (~ 90X). You may wish to reduce this to 2 or 1 hrs in the script `gatk4_getpileupsummaries_byInterval.pbs`, in order to minimise potential queue time. The jobs are run on the `hugemem` queue which is a more scarce resource compared to `normal` queue, so queue time may be a factor for large cohorts if the `hugemem` queue is in high demand at the time of processing. Changing to the `normal` or `normalbw` queue is generally not recommended, as CPU efficiency and SU usage is poorer given the need to request more CPUS than GATK can use (1) due to memory requirements. 
+The created inputs file should be 3 X N, where N is the number of samples. Three 'chunks' of intervals are run per sample rather than scattering all 18 intervals - please see justification above. The default walltime for the GetPileupSummaries job is 3 hours per job (where one job is one chunk of intervals for one sample). This is sufficient for a very high-coverage BAM (~ 174X samples required 2 hrs). You may wish to reduce this to 2 or 1 hrs in the script `gatk4_getpileupsummaries_byInterval.pbs` depending on your sample coverage, in order to minimise potential queue time. The jobs are run on the `hugemem` queue which is a more scarce resource compared to `normal` queue, so queue time may be a factor for large cohorts if the `hugemem` queue is in high demand at the time of processing. Changing to the `normal` or `normalbw` queue is generally not recommended, as CPU efficiency and SU usage is poorer given the need to request more CPUS than GATK can use (1) due to memory requirements. 
 
 ###### Submit the GetPileupSummaries jobs
 
@@ -592,7 +592,7 @@ If issues were detected, a new inputs file for the failed tasks will be written 
 
 ###### Gather (concatenate) the output per sample
 
-Run:
+This step takes around 3-6 seconds per sample on the login node. Run:
 ```
 bash gatk4_getpileupsummaries_byInterval_concat.sh <config-filepath>
 ```
@@ -604,6 +604,22 @@ Once you are satisfied that the final sample pileups are complete, you can delet
  ``` 
  rm -rf ../<cohortName>_GetPileupSummaries/scatter/
  ```
+
+##### Benchmarking metrics for this step
+
+This shows compute usage for 2 samples, one 81 GB BAM file ('smallSample', approx 73X raw coverage) and the other 219 GB BAM ('largeSample', approx 174X coverage). Each job was run on one Gadi `hugemem` CPU, allowing 28 GB java mem to the GATK tool.
+
+The 4-digit strings within the job name column are the intervals processed within that chunked job. Note that the chunks contain different collections of intervals between the two samples, due to testing different interval divisions. The sum KSU and walltime metrics are still valid. The interval chunks shown for the 'large' sample are the current default. 
+ 
+
+| #JobName                                           | CPUs_requested | Mem_requested | Mem_used | CPUtime_mins | Walltime_mins | JobFS_used | Efficiency | Service_units |
+|---------------------------------------------------|----------------|---------------|----------|--------------|---------------|------------|------------|---------------|
+| smallSample_0000-0001-0002-0003-0004.o            | 1              | 31.0GB        | 22.77GB  | 62.7         | 63.43         | 685.84KB   | 0.99       | 3.17          |
+| smallSample_0005-0006-0007-0008-0009-0010-0011.o | 1              | 31.0GB        | 26.08GB  | 64.2         | 64.93         | 688.83KB   | 0.99       | 3.25          |
+| smallSample_0012-0013-0014-0015-0016-0017.o      | 1              | 31.0GB        | 19.15GB  | 44.17        | 44.63         | 685.84KB   | 0.99       | 2.23          |
+| largeSample_0000-0001-0002-0003.o                 | 1              | 31.0GB        | 31.0GB   | 88.88        | 89.08         | 684.34KB   | 1           | 4.45          |
+| largeSample_0004-0005-0006-0007-0008-0009.o       | 1              | 31.0GB        | 31.0GB   | 95.98        | 96.22         | 687.33KB   | 1           | 4.81          |
+| largeSample_0010-0011-0012-0013-0014-0015-0016-0017.o | 1          | 31.0GB        | 31.0GB   | 111.68       | 111.98        | 688.83KB   | 1           | 5.6           |
 
 
 ### 2. Calculate contamination
@@ -638,9 +654,9 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
  
 # Benchmarking metrics
  
- The following benchmarks were obtained from processing 20 tumour-normal pairs (34X and 70X, human samples).  My apologies that the steps are not in order, I will amend this soon!
+ The following benchmarks were obtained from processing 20 tumour-normal pairs (34X and 70X, human samples).  My apologies that the steps are not in chronological order :blush:
  
- | #JobName                        | CPUs_requested | CPUs_used | Mem_requested | Mem_used | CPUtime    | CPUtime_mins | Walltime_req | Walltime_used | Walltime_mins | JobFS_req | JobFS_used | Efficiency | Service_units(CPU_hours) |
+ | #JobName                        | CPUs_requested | CPUs_used | Mem_requested | Mem_used | CPUtime    | CPUtime_mins | Walltime_req | Walltime_used | Walltime_mins | JobFS_req | JobFS_used | Efficiency | Service_units |
 |---------------------------------|----------------|-----------|---------------|----------|------------|--------------|--------------|---------------|---------------|-----------|------------|------------|--------------------------|
 | gatk4_cohort_pon_144            | 144            | 144       | 4.39TB        | 110.13GB | 16:39:15   | 999.25       | 5:00:00      | 0:24:51       | 24.85         | 1.46GB    | 9.08MB     | 0.28       | 178.92                   |
 | gatk4_cohort_pon_48             | 48             | 48        | 1.46TB        | 102.54GB | 17:26:26   | 1046.43      | 10:00:00     | 0:26:04       | 26.07         | 500.0MB   | 9.08MB     | 0.84       | 62.56                    |
@@ -660,7 +676,8 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
 | gatk4_pon_genomicsdbimport_48   | 48             | 48        | 1.46TB        | 314.08GB | 21:27:48   | 1287.8       | 10:00:00     | 0:30:33       | 30.55         | 500.0MB   | 8.95MB     | 0.88       | 73.32                    |
 | gatk4_pon_genomicsdbimport_96   | 96             | 96        | 2.93TB        | 602.88GB | 21:48:05   | 1308.08      | 10:00:00     | 0:18:14       | 18.23         | 1000.0MB  | 8.95MB     | 0.75       | 87.52                    |
 
-\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. I recommend NOT using gnomAD variants as a common biallelic resource as it requires extensive benchmarking to overcome Java "OutOfMemory" errors, specific to your sample and sample coverage. 
+\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. 
+
  
 # Cite us to support us!
  
