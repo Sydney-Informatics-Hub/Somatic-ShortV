@@ -35,8 +35,8 @@ then
 fi
 
 # Select your common biallelic resource, or input your own resource:
-#common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz
-common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38.vcf.gz
+common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz
+#common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38.vcf.gz # requires different set of scripts to compute on NCI Gadi with tested GATK versions
 
 config=$1
 cohort=$(basename "$config" | cut -d'.' -f 1)

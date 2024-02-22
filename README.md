@@ -10,7 +10,8 @@ The scripts in this repository call somatic short variants (SNPs and indels) fro
 * Scalable through scatter-gather parallelism with `openmpi` and `nci.parallel`
 * Checker scripts (no KSU cost)
 * Checkpointing and resumption of only failed tasks if required
-* Support: this repository is actively monitored
+* Support: this repository is actively monitored, however major updates are not currently planned. We do however have plans to Nextflow this workflow.
+* Note as at 31st January 2024: some performance loss has been observed for the scatter-gather parallelism running multiple tasks under nci-parallel. Since Nextflow workflows do not rely on this scatter  method, we will be focusing on that as a solve. 
 
 ### Reference genome: GRCh38/hg38 + ALT contigs
 
@@ -46,13 +47,13 @@ __Output will be created at this directory level. Submit jobs within the `Somati
 
 In your high level directory `git clone https://github.com/Sydney-Informatics-Hub/Somatic-ShortV.git`. `Somatic-ShortV` contains the scripts of the workflow. Submit all jobs within `Somatic-ShortV`.
 
-#### 2. Tool dependances
+#### 2. Tool dependencies
 
 The tools required to run this pipeline include:
 
 * `openmpi/4.1.0`
 * `nci-parallel/1.0.0a`
-* GATK4. The pipeline is compatible with versions: `gatk/4.1.2.0`,`gatk/4.1.8.1`. It has not been tested with other versions of GATK4. 
+* GATK4. The pipeline is compatible with versions: `gatk/4.1.2.0`,`gatk/4.1.8.1`, `gatk/4.2.1.0`. It has not been tested with other versions of GATK4. 
 
 Use `module avail` to check if they are currently globally installed.
 
@@ -468,7 +469,9 @@ The `../Reference` directory downloadable and described in [Fastq-to-BAM](https:
 * Common biallelic variants from the ExAC dataset (containing 60,706 exomes), lifted to the hg38 reference genome in `../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`
 * Common biallelic variants from gnomAD (76,156 whole genomes) mapped to hg38 in `../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz`. This was created using the optional `SelectVariants` tool in the `gatk4_selectvariants.pbs` script. 
 
-Optionally, you can generate your own common biallelic variant resource.
+Due to the vast difference in number of loci between these two public resources, the methodology has been updated to enable use of the `af-only-gnomad.common_biallelic.hg38.vcf.gz` on NCI Gadi. Issues running GetPileupSummaries using this VCF can be read about [here](https://github.com/Sydney-Informatics-Hub/Somatic-ShortV/issues/15) and [here](https://gatk.broadinstitute.org/hc/en-us/community/posts/4410487754779-GetPileupSummaries-Error-java-lang-OutOfMemoryError-Java-heap-space). So, the resource you choose to use for this step in the workflow ("small_exac" or "gnomad") will dictate which scripts (which processing methodology) you use for this step.
+
+Optionally, you can generate your own common biallelic variant resource. If so, please compare the number of loci in your VCF to the above two public resources, and use the script set that best matches the size of your resource.
  
 ### 0. Optional: Create common biallelic variant resources
  
@@ -480,24 +483,31 @@ In the `gatk4_selectvariants.pbs` script, replace `<>` with your resource for `r
 qsub gatk4_selectvariants.pbs
 ```
 
-### 1. GetPileupSummaries
+### 1. GetPileupSummaries 
  
 With your common biallelic germline resource, run `GetPileupSummaries` for all samples in your `cohort.config` file. 
 
-The default germline resource used is `af-only-gnomad.common_biallelic.hg38.vcf.gz`. If you would like to change this resource, set `common_biallelic` variable to the path to your chosen resource.
+**IMPORTANT NOTE ON COMMON BIALLELIC VCF RESOURCE**
+
+The default germline resource used is `small_exac_common_3.hg38.vcf.gz`. To use this resource, please follow `Option 1: using small resource eg "small_exac"`. If you would like to change this resource, set `common_biallelic` variable to the path to your chosen resource. If using a large resource eg `af-only-gnomad.common_biallelic.hg38.vcf.gz` please use the script set and methodology described in `Option 2: using large resource eg "gnomad"` `. 
+
+#### Option 1: using small resource eg "small_exac" 
  
-Then create inputs by:
+##### Create inputs
         
 ```
 sh gatk4_getpileupsummaries_make_input.sh /path/to/cohort.config
 ```
-   
+
+##### Submit the parallel-by-sample job
+
 Adjust <project> and compute resource requests in `gatk4_getpileupsummaries_run_parallel.pbs`, then submit your job by:
 
 ```
 qsub gatk4_getpileupsummaries_run_parallel.pbs     
 ```
-#### Perform checks 
+
+##### Perform checks
  
 `GetPileupSummaries` task log files are checked for `SUCCESS` and `error` messages. The script also checks that the expected output `<cohort>_GetPileupSummaries/samples_pileups.table` exists and it not empty. 
 
@@ -512,6 +522,105 @@ The script will print the number of successful and unsuccessful tasks to the ter
 ```
 qsub gatk4_getpileupsummaries_missing_run_parallel.pbs
 ```
+
+#### Option 2: using large resource eg "gnomad" 
+
+This section describes a method to compute GATK GetPileupSummaries using scatter-gather parallelism over intervals rather than the whole genome at a time. The rest of this workflow has used `nci-parallel` to achieve this. At the time of writing this set of scripts (01-31-2024) CPU efficiency was observed to be reduced by this method, so an alternate approach has been incorporated that splits the genomic intervals into three 'chunks' of intervals per sample, then submits the 'chunks' with a good old bash `for` loop. Three chunks per sample seemed a fair compromise between walltime and not thrashing the scheduler. There are 8 scripts specific for this part of the workflow, with 6 run steps, but do not be dissuaded - it's pretty straightforward. 
+
+The first twp steps (three scripts total) need only be done once per 'common_biallelic' resource, eg gnomad. This splits the genome by interval (we selected 24 yet 18 were returned, as 'BALANCING_WITHOUT_INTERVAL_SUBDIVISION' mode was applied). Then, the gnomad VCF resource is split into 18 smaller VCF files. The intention was to parallelise this many splits per sample, but see note above. The interval list files and VCF interval files are written to appropriate locations within the `Reference` directory, so please make sure this is writable by you before you continue. 
+
+The remaining 4 steps (5 scripts) utilise the interval VCF files to execute three GetPileupSummaries jobs per sample, check the job outputs, and then concatenate the scattered interval tables into one GetPileupSummaries table per sample (after which, the scattered interval tables can be deleted).
+
+**For all PBS scripts described here, please adjust your NCI project code at `-P` and `l storage` requirements!**
+
+##### Prepare the intervals (need only be run once per VCF resource)
+
+After ensuring that you have read-write acces to your `Reference` directory and its subfolders, run this fast and light script on the login node:
+
+```
+bash gatk4_getpileupsummaries_splitIntervals.sh
+```
+
+This will create intervals files in `../Reference/GetPileupSummaries_intervals`.
+
+Then, check that the filepath to your large resource is correct within the script `gatk4_getpileupsummaries_split_common_vcf_run.sh`. Default is currently `../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38.vcf.gz`. 
+
+Run the following command to split the VCF according to the newly created 18 interval files:
+
+```
+bash gatk4_getpileupsummaries_split_common_vcf_run.sh
+```
+
+This will submit 18 separate PBS jobs, one per interval. This is very fast on the compute nodes but quite slow on the login node, thus the preference to schedule these small tasks on the cluster. 
+
+Output will be new zipped VCF files and index files within the parent directory of the resource VCF, with a newly created sub-directory based on the VCF file prefix, eg `../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.hg38`.
+
+##### Scatter-gather processing for the cohort
+
+###### Make inputs
+
+As usual, make the inputs, providing the filepath of your samples config file as first and only command line argument:
+
+```
+bash gatk4_getpileupsummaries_byInterval_make_input.sh <config-filepath>
+```
+
+The created inputs file should be 3 X N, where N is the number of samples. Three 'chunks' of intervals are run per sample rather than scattering all 18 intervals - please see justification above. The default walltime for the GetPileupSummaries job is 3 hours per job (where one job is one chunk of intervals for one sample). This is sufficient for a very high-coverage BAM (~ 174X samples required 2 hrs). You may wish to reduce this to 2 or 1 hrs in the script `gatk4_getpileupsummaries_byInterval.pbs` depending on your sample coverage, in order to minimise potential queue time. The jobs are run on the `hugemem` queue which is a more scarce resource compared to `normal` queue, so queue time may be a factor for large cohorts if the `hugemem` queue is in high demand at the time of processing. Changing to the `normal` or `normalbw` queue is generally not recommended, as CPU efficiency and SU usage is poorer given the need to request more CPUS than GATK can use (1) due to memory requirements. 
+
+###### Submit the GetPileupSummaries jobs
+
+Once the inputs file is made, and you are happy with the walltime set in the PBS script, submit all chunks for all samples with:
+
+```
+bash gatk4_getpileupsummaries_byInterval_runLoop.sh
+```
+
+###### Perform checks
+
+Once the jobs have completed, check all jobs with:
+
+```
+bash gatk4_getpileupsummaries_byInterval_check.sh
+```
+
+If all jobs were successful, the following message will be returned:
+```
+No issues detected. Please continue with gatk4_getpileupsummaries_byInterval_concat.sh
+```
+
+If issues were detected, a new inputs file for the failed tasks will be written to `Inputs/gatk4_getpileupsummaries.inputs-failed`. A complete set of re-run failed scripts have not been written - in the event of a small number of failures, ie on walltime, you can easily take a copy of the script `gatk4_getpileupsummaries_byInterval.pbs` and increase the walltime, adjust the inputs file, and supply the correct variables as per present in the original launcher script `gatk4_getpileupsummaries_byInterval_runLoop.sh`. It is most likely that only one or a handful of the intervals within the 'chunk' of intervals failed to complete (in the event that the failure was insufficient walltme). In this case, resubmitting just those intervals, rather than the entire chunk of intervals, would be wise to minmise wasted KSU. Given the future move of this workflow away from `nci-parallel` and towards Nextflow, time has not been spent to create this level of detail here. If you need help with this, please reach out. 
+
+###### Gather (concatenate) the output per sample
+
+This step takes around 3-6 seconds per sample on the login node. Run:
+```
+bash gatk4_getpileupsummaries_byInterval_concat.sh <config-filepath>
+```
+
+This will take the scattered pileup tables for each sample from ` ../<cohortName>_GetPileupSummaries/scatter/` and concatenate them (avoiding redundant headers) into `../<cohortName>_GetPileupSummaries/<LabSampleID>_pileups.table`. 
+
+Once you are satisfied that the final sample pileups are complete, you can delete the scatter directory:
+
+ ``` 
+ rm -rf ../<cohortName>_GetPileupSummaries/scatter/
+ ```
+
+##### Benchmarking metrics for this step
+
+This shows compute usage for 2 samples, one 81 GB BAM file ('smallSample', approx 73X raw coverage) and the other 219 GB BAM ('largeSample', approx 174X coverage). Each job was run on one Gadi `hugemem` CPU, allowing 28 GB java mem to the GATK tool.
+
+The 4-digit strings within the job name column are the intervals processed within that chunked job. Note that the chunks contain different collections of intervals between the two samples, due to testing different interval divisions. The sum KSU and walltime metrics are still valid. The interval chunks shown for the 'large' sample are the current default. 
+ 
+
+| #JobName                                           | CPUs_requested | Mem_requested | Mem_used | CPUtime_mins | Walltime_mins | JobFS_used | Efficiency | Service_units |
+|---------------------------------------------------|----------------|---------------|----------|--------------|---------------|------------|------------|---------------|
+| smallSample_0000-0001-0002-0003-0004.o            | 1              | 31.0GB        | 22.77GB  | 62.7         | 63.43         | 685.84KB   | 0.99       | 3.17          |
+| smallSample_0005-0006-0007-0008-0009-0010-0011.o | 1              | 31.0GB        | 26.08GB  | 64.2         | 64.93         | 688.83KB   | 0.99       | 3.25          |
+| smallSample_0012-0013-0014-0015-0016-0017.o      | 1              | 31.0GB        | 19.15GB  | 44.17        | 44.63         | 685.84KB   | 0.99       | 2.23          |
+| largeSample_0000-0001-0002-0003.o                 | 1              | 31.0GB        | 31.0GB   | 88.88        | 89.08         | 684.34KB   | 1           | 4.45          |
+| largeSample_0004-0005-0006-0007-0008-0009.o       | 1              | 31.0GB        | 31.0GB   | 95.98        | 96.22         | 687.33KB   | 1           | 4.81          |
+| largeSample_0010-0011-0012-0013-0014-0015-0016-0017.o | 1          | 31.0GB        | 31.0GB   | 111.68       | 111.98        | 688.83KB   | 1           | 5.6           |
+
 
 ### 2. Calculate contamination
  
@@ -545,9 +654,9 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
  
 # Benchmarking metrics
  
- The following benchmarks were obtained from processing 20 tumour-normal pairs (34X and 70X, human samples).  My apologies that the steps are not in order, I will amend this soon!
+ The following benchmarks were obtained from processing 20 tumour-normal pairs (34X and 70X, human samples).  My apologies that the steps are not in chronological order :blush:
  
- | #JobName                        | CPUs_requested | CPUs_used | Mem_requested | Mem_used | CPUtime    | CPUtime_mins | Walltime_req | Walltime_used | Walltime_mins | JobFS_req | JobFS_used | Efficiency | Service_units(CPU_hours) |
+ | #JobName                        | CPUs_requested | CPUs_used | Mem_requested | Mem_used | CPUtime    | CPUtime_mins | Walltime_req | Walltime_used | Walltime_mins | JobFS_req | JobFS_used | Efficiency | Service_units |
 |---------------------------------|----------------|-----------|---------------|----------|------------|--------------|--------------|---------------|---------------|-----------|------------|------------|--------------------------|
 | gatk4_cohort_pon_144            | 144            | 144       | 4.39TB        | 110.13GB | 16:39:15   | 999.25       | 5:00:00      | 0:24:51       | 24.85         | 1.46GB    | 9.08MB     | 0.28       | 178.92                   |
 | gatk4_cohort_pon_48             | 48             | 48        | 1.46TB        | 102.54GB | 17:26:26   | 1046.43      | 10:00:00     | 0:26:04       | 26.07         | 500.0MB   | 9.08MB     | 0.84       | 62.56                    |
@@ -567,7 +676,8 @@ qsub gatk4_filtermutectcalls_run_parallel.pbs
 | gatk4_pon_genomicsdbimport_48   | 48             | 48        | 1.46TB        | 314.08GB | 21:27:48   | 1287.8       | 10:00:00     | 0:30:33       | 30.55         | 500.0MB   | 8.95MB     | 0.88       | 73.32                    |
 | gatk4_pon_genomicsdbimport_96   | 96             | 96        | 2.93TB        | 602.88GB | 21:48:05   | 1308.08      | 10:00:00     | 0:18:14       | 18.23         | 1000.0MB  | 8.95MB     | 0.75       | 87.52                    |
 
-\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. I recommend NOT using gnomAD variants as a common biallelic resource as it requires extensive benchmarking to overcome Java "OutOfMemory" errors, specific to your sample and sample coverage. 
+\*gatk4_getpileupsummaries_exac was benchmarked with 80 tumour (~70X) and normal (~35X) paired samples, using `common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz`. 
+
  
 # Cite us to support us!
  

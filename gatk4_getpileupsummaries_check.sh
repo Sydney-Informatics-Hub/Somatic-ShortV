@@ -38,8 +38,8 @@ fi
 config=$1
 cohort=$(basename $config | cut -d'.' -f 1)
 bamdir=../Final_bams
-#common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz
-common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz
+common_biallelic=../Reference/gatk-best-practices/somatic-hg38/small_exac_common_3.hg38.vcf.gz
+#common_biallelic=../Reference/gatk-best-practices/somatic-hg38/af-only-gnomad.common_biallelic.hg38.vcf.gz # requires different set of scripts to compute on NCI Gadi with tested GATK versions
 outdir=./${cohort}_GetPileupSummaries
 logdir=./Logs/gatk4_getpileupsummaries
 INPUTS=./Inputs
