@@ -2,6 +2,13 @@
 
 The scripts in this repository call somatic short variants (SNPs and indels) from tumour and matched normal BAM files following [GATK's Best Practices Workflow](https://gatk.broadinstitute.org/hc/en-us/articles/360035894731-Somatic-short-variant-discovery-SNVs-Indels-). The workflow and scripts have been specifically optimised to run efficiently and at scale on the __National Compute Infrastructure, Gadi.__
 
+# ⚠️ Notice of workflow deprecation
+This workflow is no longer actively supported or maintained. While you are welcome to use the existing code, please note that no further updates, bug fixes, or support will be provided.
+
+For questions or alternative recommendations for University of Sydney staff and students, please get in touch with sih_info@sydney.edu.au. You can find alternatives at [WorkflowHub](https://workflowhub.eu/).
+
+Thank you for your understanding!
+
 <img src="https://user-images.githubusercontent.com/49257820/94503907-ebb0cc80-024a-11eb-800c-41854b1f041c.png" width="110%" height="110%">
 
 ### Features of this pipeline
